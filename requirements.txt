@@ -1,5 +1,6 @@
-flask
+fastapi
+uvicorn
+python-dotenv
 line-bot-sdk
 gspread
 oauth2client
-python-dotenv
