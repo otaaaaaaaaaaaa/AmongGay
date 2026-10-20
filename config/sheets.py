@@ -4,7 +4,7 @@ from oauth2client.service_account import (
     ServiceAccountCredentials
 )
 
-from config.settings import (
+from settings import (
     SPREADSHEET_NAME
 )
 
@@ -16,29 +16,39 @@ scope = [
 creds = (
     ServiceAccountCredentials
     .from_json_keyfile_name(
-        "credentials.json",
+        "/etc/secrets/credentials.json",
         scope
     )
 )
 
-client = gspread.authorize(creds)
+client = gspread.authorize(
+    creds
+)
 
 spreadsheet = client.open(
     SPREADSHEET_NAME
 )
 
-users_sheet = spreadsheet.worksheet(
-    "users"
+users_sheet = (
+    spreadsheet.worksheet(
+        "users"
+    )
 )
 
-participants_sheet = spreadsheet.worksheet(
-    "participants"
+participants_sheet = (
+    spreadsheet.worksheet(
+        "participants"
+    )
 )
 
-tasks_sheet = spreadsheet.worksheet(
-    "tasks"
+tasks_sheet = (
+    spreadsheet.worksheet(
+        "tasks"
+    )
 )
 
-game_state_sheet = spreadsheet.worksheet(
-    "game_state"
+game_state_sheet = (
+    spreadsheet.worksheet(
+        "game_state"
+    )
 )
