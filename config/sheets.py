@@ -4,7 +4,7 @@ from oauth2client.service_account import (
     ServiceAccountCredentials
 )
 
-from settings import (
+from config.settings import (
     SPREADSHEET_NAME
 )
 
