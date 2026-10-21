@@ -60,15 +60,15 @@ def root():
 
 
 @app.post("/callback")
-async def callback(
-    request: Request
-):
+async def callback(request: Request):
 
     signature = request.headers.get(
         "X-Line-Signature"
     )
 
     body = await request.body()
+
+    print(body.decode())
 
     try:
 
@@ -78,6 +78,8 @@ async def callback(
         )
 
     except Exception as e:
+
+        print(e)
 
         raise HTTPException(
             status_code=400,
