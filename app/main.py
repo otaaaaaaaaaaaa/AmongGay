@@ -45,6 +45,13 @@ from services.sabotage_service import (
     finish_sabotage
 )
 
+from config.line_client import (
+    handler,
+    reply_text,
+    push_text,
+    reply_menu
+)
+
 app = FastAPI()
 
 CURRENT_GROUP_ID = None
