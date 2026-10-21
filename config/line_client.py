@@ -12,6 +12,13 @@ from config.settings import (
     CHANNEL_SECRET
 )
 
+from linebot.models import (
+    TextSendMessage,
+    QuickReply,
+    QuickReplyButton,
+    MessageAction
+)
+
 line_bot_api = LineBotApi(
     CHANNEL_ACCESS_TOKEN
 )
@@ -50,3 +57,40 @@ def get_profile(user_id):
 
     except Exception:
         return None
+
+def reply_menu(reply_token):
+
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(
+            text="コマンドを選択してください",
+            quick_reply=QuickReply(
+                items=[
+                    QuickReplyButton(
+                        action=MessageAction(
+                            label="参加",
+                            text="参加"
+                        )
+                    ),
+                    QuickReplyButton(
+                        action=MessageAction(
+                            label="離脱",
+                            text="離脱"
+                        )
+                    ),
+                    QuickReplyButton(
+                        action=MessageAction(
+                            label="状況",
+                            text="状況"
+                        )
+                    ),
+                    QuickReplyButton(
+                        action=MessageAction(
+                            label="サポタージュ",
+                            text="サポタージュ"
+                        )
+                    )
+                ]
+            )
+        )
+    )
