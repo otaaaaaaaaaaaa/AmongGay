@@ -131,6 +131,11 @@ def handle_message(
     except:
         pass
 
+    reply_menu(
+    event.reply_token
+    )
+
+
     # ------------------
     # 参加
     # ------------------
