@@ -12,7 +12,8 @@ from linebot.models import (
 from config.line_client import (
     handler,
     reply_text,
-    push_text
+    push_text,
+    reply_menu
 )
 
 from config.settings import (
@@ -45,13 +46,6 @@ from services.sabotage_service import (
     finish_sabotage
 )
 
-from config.line_client import (
-    handler,
-    reply_text,
-    push_text,
-    reply_menu
-)
-
 app = FastAPI()
 
 CURRENT_GROUP_ID = None
@@ -60,10 +54,7 @@ CURRENT_ROLES = []
 
 @app.get("/")
 def root():
-
-    return {
-        "status": "ok"
-    }
+    return {"status": "ok"}
 
 
 @app.post("/callback")
@@ -74,8 +65,6 @@ async def callback(request: Request):
     )
 
     body = await request.body()
-
-    print(body.decode())
 
     try:
 
@@ -100,20 +89,14 @@ async def callback(request: Request):
     MessageEvent,
     message=TextMessage
 )
-def handle_message(
-    event
-):
+def handle_message(event):
 
     global CURRENT_GROUP_ID
     global CURRENT_ROLES
 
-    user_id = (
-        event.source.user_id
-    )
+    user_id = event.source.user_id
 
-    text = (
-        event.message.text.strip()
-    )
+    text = event.message.text.strip()
 
     save_user(user_id)
 
@@ -128,13 +111,8 @@ def handle_message(
                 event.source.group_id
             )
 
-    except:
+    except Exception:
         pass
-
-    reply_menu(
-    event.reply_token
-    )
-
 
     # ------------------
     # 参加
@@ -142,24 +120,20 @@ def handle_message(
 
     if text == "参加":
 
-        name = (
-            get_display_name(
-                user_id
-            )
+        name = get_display_name(
+            user_id
         )
 
-        success = (
-            add_participant(
-                user_id,
-                name
-            )
+        success = add_participant(
+            user_id,
+            name
         )
 
         if success:
 
             reply_text(
                 event.reply_token,
-                "参加しました。"
+                "参加しました ✅"
             )
 
         else:
@@ -183,7 +157,24 @@ def handle_message(
 
         reply_text(
             event.reply_token,
-            "離脱しました。"
+            "離脱しました 👋"
+        )
+
+        return
+
+    # ------------------
+    # 状況
+    # ------------------
+
+    if text == "状況":
+
+        count = len(
+            get_participants()
+        )
+
+        reply_text(
+            event.reply_token,
+            f"現在の参加者数: {count}人"
         )
 
         return
@@ -266,8 +257,18 @@ def handle_message(
 
             push_text(
                 CURRENT_GROUP_ID,
-                f"🎮ゲーム開始！\n\n参加人数: {len(participants)}人\nインポスター: {imposter_count}人\n\n役職を送信しました。"
+                f"""🎮ゲーム開始！
+
+参加人数: {len(participants)}人
+インポスター: {imposter_count}人
+
+役職を個人チャットへ送信しました。"""
             )
+
+        reply_text(
+            event.reply_token,
+            "ゲームを開始しました。"
+        )
 
         return
 
@@ -335,3 +336,45 @@ def handle_message(
         )
 
         return
+
+    # ------------------
+    # ヘルプ
+    # ------------------
+
+    if text in [
+        "こんにちは",
+        "こん",
+        "ヘルプ",
+        "help"
+    ]:
+
+        reply_text(
+            event.reply_token,
+            """🎮 School Among Us
+
+参加
+離脱
+状況
+
+管理者:
+開始 3"""
+        )
+
+        return
+
+    # ------------------
+    # その他
+    # ------------------
+
+    reply_text(
+        event.reply_token,
+        """不明なコマンドです。
+
+使えるコマンド:
+・参加
+・離脱
+・状況
+
+管理者:
+・開始 3"""
+    )
