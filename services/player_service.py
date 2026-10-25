@@ -1,5 +1,6 @@
 from config.sheets import spreadsheet
 
+
 players_sheet = spreadsheet.worksheet("players")
 
 
@@ -55,6 +56,7 @@ def is_player_alive(user_id):
 def clear_players():
     """プレイヤー一覧を初期化する。"""
     players_sheet.clear()
+
     players_sheet.append_row(
         [
             "userId",
@@ -105,10 +107,15 @@ def kill_player(display_name):
 
     for row_number, row in enumerate(values[1:], start=2):
         display_name_in_row = (
-            row[name_column] if len(row) > name_column else ""
+            row[name_column]
+            if len(row) > name_column
+            else ""
         )
+
         alive_value = (
-            row[alive_column] if len(row) > alive_column else ""
+            row[alive_column]
+            if len(row) > alive_column
+            else ""
         )
 
         if display_name_in_row != str(display_name):
@@ -122,6 +129,7 @@ def kill_player(display_name):
             alive_column + 1,
             "FALSE",
         )
+
         return True
 
     return False
@@ -157,6 +165,7 @@ def set_vote(user_id, target_name):
                 vote_column + 1,
                 target_name,
             )
+
             return
 
 
@@ -170,7 +179,9 @@ def clear_votes():
     headers = values[0]
 
     if "vote" not in headers:
-        raise ValueError("playersシートにvote列が必要です。")
+        raise ValueError(
+            "playersシートにvote列が必要です。"
+        )
 
     vote_column = headers.index("vote") + 1
 
@@ -206,6 +217,7 @@ def get_vote_result():
         return None
 
     max_votes = max(votes.values())
+
     winners = [
         target
         for target, count in votes.items()
@@ -256,10 +268,15 @@ def build_alive_list():
     """生存者一覧のメッセージを作成する。"""
     players = get_alive_players()
 
-    lines = ["🟢生存者一覧", ""]
+    lines = [
+        "🟢生存者一覧",
+        "",
+    ]
 
     for player in players:
-        lines.append(str(player.get("displayName", "")))
+        lines.append(
+            str(player.get("displayName", ""))
+        )
 
     lines.append("")
     lines.append(f"合計 {len(players)}人")
