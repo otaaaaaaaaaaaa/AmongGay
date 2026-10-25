@@ -1,4 +1,3 @@
-```python
 from datetime import datetime, timedelta, timezone
 
 from config.sheets import game_state_sheet
