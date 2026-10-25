@@ -1,36 +1,25 @@
-
 import json
 import random
 
 from config.sheets import (
     tasks_sheet,
-    spreadsheet,
+    players_sheet,
+    game_state_sheet,
 )
 
-from services.game_state_service import (
-    increment_completed_tasks,
-)
-
-players_sheet = spreadsheet.worksheet("players")
-
-
-# ==================================================
-# タスクの取得・割り当て
-# ==================================================
 
 def get_enabled_tasks():
-    """tasksシートから有効なタスクを取得する。"""
-    tasks = tasks_sheet.get_all_records()
+    """有効なタスクだけを取得する。"""
     result = []
 
-    for task in tasks:
-        enabled = str(task.get("enabled", "")).strip().upper()
+    for row in tasks_sheet.get_all_records():
+        enabled = str(row.get("enabled", "")).strip().upper()
 
-        if enabled == "TRUE":
-            name = str(task.get("task", "")).strip()
+        if enabled in ("TRUE", "1", "YES"):
+            task_name = str(row.get("task", "")).strip()
 
-            if name:
-                result.append(name)
+            if task_name:
+                result.append(task_name)
 
     return result
 
@@ -39,110 +28,60 @@ def assign_tasks(count=3):
     """有効なタスクから指定数をランダムに選ぶ。"""
     tasks = get_enabled_tasks()
 
-    if len(tasks) <= count:
-        return tasks
+    if not tasks:
+        return []
 
-    return random.sample(tasks, count)
+    return random.sample(tasks, min(count, len(tasks)))
 
-
-# ==================================================
-# タスクデータの保存形式
-# ==================================================
 
 def encode_tasks(tasks):
-    """
-    タスクと完了状態をJSONで保存する。
-    初期状態ではすべて未完了。
-
-    例:
-    {
-        "items": [
-            {"name": "タスクA", "completed": false},
-            {"name": "タスクB", "completed": false}
-        ]
-    }
-    """
-    data = {
-        "items": [
-            {
-                "name": str(task),
-                "completed": False,
-            }
-            for task in tasks
-        ]
-    }
-
-    return json.dumps(data, ensure_ascii=False)
+    """タスク名と完了状態をJSONに変換する。"""
+    return json.dumps(
+        {
+            "items": [
+                {
+                    "name": task,
+                    "completed": False,
+                }
+                for task in tasks
+            ]
+        },
+        ensure_ascii=False,
+    )
 
 
 def _decode_task_records(task_text):
-    """
-    保存済みタスクを内部形式に変換する。
-
-    以前の「タスクA|タスクB」形式も読み込めるようにする。
-    """
+    """新形式と旧形式のタスクデータを読み込む。"""
     if not task_text:
         return []
 
-    text = str(task_text).strip()
-
-    if not text:
-        return []
-
     try:
-        data = json.loads(text)
+        data = json.loads(task_text)
 
         if isinstance(data, dict) and isinstance(data.get("items"), list):
-            records = []
-
-            for item in data["items"]:
-                if not isinstance(item, dict):
-                    continue
-
-                name = str(item.get("name", "")).strip()
-
-                if not name:
-                    continue
-
-                records.append({
-                    "name": name,
+            return [
+                {
+                    "name": str(item.get("name", "")),
                     "completed": bool(item.get("completed", False)),
-                })
+                }
+                for item in data["items"]
+            ]
 
-            return records
-
-    except (json.JSONDecodeError, TypeError, ValueError):
+    except (json.JSONDecodeError, TypeError):
         pass
 
-    # 旧形式との互換性:
-    # "タスクA|タスクB|タスクC"
+    # 旧形式の「タスクA|タスクB」にも対応
     return [
         {
             "name": name,
             "completed": False,
         }
-        for name in text.split("|")
+        for name in task_text.split("|")
         if name
     ]
 
 
-def decode_tasks(task_text):
-    """保存形式からタスク名のリストを返す。"""
-    return [
-        item["name"]
-        for item in _decode_task_records(task_text)
-    ]
-
-
-# ==================================================
-# プレイヤーのタスク状態
-# ==================================================
-
 def _get_player_row(user_id):
-    """
-    user_idに一致するplayersシートの行番号とデータを返す。
-    行番号はスプレッドシート上の1始まり。
-    """
     values = players_sheet.get_all_values()
 
     if not values:
@@ -153,184 +92,153 @@ def _get_player_row(user_id):
     if "userId" not in headers:
         raise ValueError("playersシートにuserId列がありません。")
 
-    user_id_col = headers.index("userId")
+    user_id_column = headers.index("userId")
 
     for row_number, row in enumerate(values[1:], start=2):
-        if len(row) > user_id_col and row[user_id_col] == user_id:
-            return row_number, headers, row
+        if len(row) > user_id_column and row[user_id_column] == str(user_id):
+            row_data = {
+                headers[i]: row[i] if i < len(row) else ""
+                for i in range(len(headers))
+            }
+
+            return row_number, headers, row_data
 
     return None, headers, None
 
 
 def get_player_tasks(user_id):
-    """指定プレイヤーのタスク名を取得する。"""
-    row_number, headers, row = _get_player_row(user_id)
+    _, _, player = _get_player_row(user_id)
 
-    if row is None:
+    if not player:
         return []
 
-    if "tasks" not in headers:
-        raise ValueError("playersシートにtasks列がありません。")
+    records = _decode_task_records(player.get("tasks", ""))
 
-    tasks_col = headers.index("tasks")
-
-    task_text = row[tasks_col] if len(row) > tasks_col else ""
-
-    return decode_tasks(task_text)
+    return [item["name"] for item in records]
 
 
 def get_completed_task_numbers(user_id):
-    """
-    完了済みタスクの番号を取得する。
-    タスク番号は1から始まる。
-    """
-    row_number, headers, row = _get_player_row(user_id)
+    _, _, player = _get_player_row(user_id)
 
-    if row is None:
+    if not player:
         return set()
 
-    if "tasks" not in headers:
-        raise ValueError("playersシートにtasks列がありません。")
-
-    tasks_col = headers.index("tasks")
-    task_text = row[tasks_col] if len(row) > tasks_col else ""
-
-    records = _decode_task_records(task_text)
+    records = _decode_task_records(player.get("tasks", ""))
 
     return {
         index
-        for index, task in enumerate(records, start=1)
-        if task["completed"]
+        for index, item in enumerate(records, start=1)
+        if item["completed"]
     }
 
 
 def get_completed_count(user_id):
-    """指定プレイヤーの完了数を取得する。"""
-    row_number, headers, row = _get_player_row(user_id)
-
-    if row is None:
-        return 0
-
-    if "completedTasks" not in headers:
-        raise ValueError(
-            "playersシートにcompletedTasks列がありません。"
-        )
-
-    count_col = headers.index("completedTasks")
-
-    try:
-        value = row[count_col] if len(row) > count_col else "0"
-        return int(value or 0)
-    except (TypeError, ValueError):
-        return 0
+    return len(get_completed_task_numbers(user_id))
 
 
-# ==================================================
-# タスク完了
-# ==================================================
+def _increment_global_completed_tasks():
+    """game_stateの全体タスク完了数を1増やす。"""
+    values = game_state_sheet.get_all_values()
+
+    if not values:
+        raise ValueError("game_stateシートが空です。")
+
+    headers = values[0]
+
+    if "key" not in headers or "value" not in headers:
+        raise ValueError("game_stateシートにはkeyとvalue列が必要です。")
+
+    key_col = headers.index("key") + 1
+    value_col = headers.index("value") + 1
+
+    for row_number, row in enumerate(values[1:], start=2):
+        if len(row) >= key_col and row[key_col - 1] == "completedTasks":
+            current = 0
+
+            if len(row) >= value_col and row[value_col - 1]:
+                current = int(row[value_col - 1])
+
+            game_state_sheet.update_cell(
+                row_number,
+                value_col,
+                current + 1,
+            )
+            return
+
+    game_state_sheet.append_row(
+        ["completedTasks", "1"],
+        value_input_option="USER_ENTERED",
+    )
+
 
 def complete_task(user_id, task_number):
     """
-    指定した番号のタスクを完了する。
-
-    戻り値:
-      int   : 完了後のプレイヤー個人の完了数
-      False : そのタスクはすでに完了済み
-      None  : プレイヤーやタスクが見つからない
-
-    タスクごとの完了状態を先に確認するため、
-    同じ番号を再送信しても完了数は増えない。
+    タスクを完了する。
+    成功: 新しい完了数を返す
+    完了済み: False
+    ユーザーや番号が不正: None
     """
-    try:
-        task_number = int(task_number)
-    except (TypeError, ValueError):
-        return None
+    row_number, headers, player = _get_player_row(user_id)
 
-    if task_number < 1:
-        return None
-
-    row_number, headers, row = _get_player_row(user_id)
-
-    if row is None:
+    if not player:
         return None
 
     if "tasks" not in headers or "completedTasks" not in headers:
         raise ValueError(
-            "playersシートにtasks列またはcompletedTasks列がありません。"
+            "playersシートにtasksとcompletedTasks列が必要です。"
         )
 
-    tasks_col = headers.index("tasks")
-    count_col = headers.index("completedTasks")
+    records = _decode_task_records(player.get("tasks", ""))
 
-    task_text = row[tasks_col] if len(row) > tasks_col else ""
-    records = _decode_task_records(task_text)
-
-    if task_number > len(records):
+    if task_number < 1 or task_number > len(records):
         return None
 
-    selected_task = records[task_number - 1]
+    item = records[task_number - 1]
 
-    # 二重完了を防ぐ。
-    if selected_task["completed"]:
+    if item["completed"]:
         return False
 
-    # 完了状態を更新する。
-    selected_task["completed"] = True
+    # 完了状態を保存
+    item["completed"] = True
 
-    updated_text = json.dumps(
-        {"items": records},
-        ensure_ascii=False,
-    )
+    tasks_column = headers.index("tasks") + 1
+    completed_column = headers.index("completedTasks") + 1
 
-    current_count = 0
-
-    try:
-        if len(row) > count_col and row[count_col]:
-            current_count = int(row[count_col])
-    except (TypeError, ValueError):
-        current_count = 0
-
-    new_count = current_count + 1
-
-    # タスクの完了状態と個人の完了数を更新する。
-    players_sheet.update_cell(
-        row_number,
-        tasks_col + 1,
-        updated_text,
+    completed_count = sum(
+        1 for task in records if task["completed"]
     )
 
     players_sheet.update_cell(
         row_number,
-        count_col + 1,
-        str(new_count),
+        tasks_column,
+        json.dumps(
+            {"items": records},
+            ensure_ascii=False,
+        ),
     )
 
-    # 全体の完了数も1つだけ増やす。
-    increment_completed_tasks()
+    players_sheet.update_cell(
+        row_number,
+        completed_column,
+        completed_count,
+    )
 
-    return new_count
+    _increment_global_completed_tasks()
 
+    return completed_count
 
-# ==================================================
-# タスク表示
-# ==================================================
 
 def build_task_message(tasks, completed_numbers=None):
-    """
-    タスク一覧をLINE向けのテキストにする。
-    completed_numbersには完了済み番号のsetを渡せる。
-    """
-    if completed_numbers is None:
-        completed_numbers = set()
+    completed_numbers = completed_numbers or set()
 
     lines = ["📋 あなたのタスク", ""]
 
-    for index, task in enumerate(tasks, start=1):
-        if index in completed_numbers:
+    for number, task in enumerate(tasks, start=1):
+        if number in completed_numbers:
             status = "✅ 完了"
         else:
             status = "⬜ 未完了"
 
-        lines.append(f"{index}. {task}　{status}")
+        lines.append(f"{number}. {task}　{status}")
 
     return "\n".join(lines)
