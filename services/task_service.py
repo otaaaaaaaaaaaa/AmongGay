@@ -1,41 +1,47 @@
 import random
 
 from config.sheets import (
-    tasks_sheet
+    tasks_sheet,
+    spreadsheet
 )
 
+from services.game_state_service import (
+    increment_completed_tasks
+)
 
-def get_all_tasks():
-
-    records = (
-        tasks_sheet.get_all_records()
+players_sheet = (
+    spreadsheet.worksheet(
+        "players"
     )
-
-    return records
+)
 
 
 def get_enabled_tasks():
 
-    tasks = get_all_tasks()
+    tasks = (
+        tasks_sheet
+        .get_all_records()
+    )
 
-    enabled_tasks = []
+    result = []
 
     for task in tasks:
 
-        value = str(
-            task["enabled"]
-        ).upper()
+        if (
+            str(
+                task["enabled"]
+            ).upper()
+            == "TRUE"
+        ):
 
-        if value == "TRUE":
-
-            enabled_tasks.append(
-                task
+            result.append(
+                task["task"]
             )
 
-    return enabled_tasks
+    return result
 
 
-def get_random_tasks(
+def assign_tasks(
     count=3
 ):
 
@@ -44,6 +50,7 @@ def get_random_tasks(
     )
 
     if len(tasks) <= count:
+
         return tasks
 
     return random.sample(
@@ -52,22 +59,126 @@ def get_random_tasks(
     )
 
 
-def build_task_message():
+def encode_tasks(tasks):
 
-    tasks = get_random_tasks()
+    return "|".join(tasks)
 
-    lines = []
+
+def decode_tasks(task_text):
+
+    if not task_text:
+
+        return []
+
+    return task_text.split(
+        "|"
+    )
+
+
+def get_player_tasks(
+    user_id
+):
+
+    players = (
+        players_sheet
+        .get_all_records()
+    )
+
+    for player in players:
+
+        if (
+            player["userId"]
+            == user_id
+        ):
+
+            return decode_tasks(
+                player["tasks"]
+            )
+
+    return []
+
+
+def get_completed_count(
+    user_id
+):
+
+    players = (
+        players_sheet
+        .get_all_records()
+    )
+
+    for player in players:
+
+        if (
+            player["userId"]
+            == user_id
+        ):
+
+            return int(
+                player[
+                    "completedTasks"
+                ]
+            )
+
+    return 0
+
+
+def complete_task(
+    user_id
+):
+
+    values = (
+        players_sheet
+        .get_all_values()
+    )
+
+    for i, row in enumerate(
+        values,
+        start=1
+    ):
+
+        if (
+            len(row) > 0
+            and row[0]
+            == user_id
+        ):
+
+            current = int(
+                row[5]
+            )
+
+            players_sheet.update_cell(
+                i,
+                6,
+                str(
+                    current + 1
+                )
+            )
+
+            increment_completed_tasks()
+
+            return (
+                current + 1
+            )
+
+    return None
+
+
+def build_task_message(
+    tasks
+):
+
+    text = (
+        "📋あなたのタスク\n\n"
+    )
 
     for index, task in enumerate(
         tasks,
         start=1
     ):
 
-        lines.append(
-            f"{index}. {task['task']}"
+        text += (
+            f"{index}. {task}\n"
         )
 
-    return (
-        "【タスク】\n\n"
-        + "\n".join(lines)
-    )
+    return text
