@@ -5,13 +5,10 @@ def assign_roles(
     participants,
     imposter_count
 ):
-
     if len(participants) == 0:
         return []
 
-    if imposter_count >= len(
-        participants
-    ):
+    if imposter_count >= len(participants):
         raise ValueError(
             "インポスター人数が多すぎます"
         )
@@ -29,22 +26,15 @@ def assign_roles(
     result = []
 
     for player in participants:
-
         role = "crew"
 
-        if player["userId"] in (
-            imposter_ids
-        ):
+        if player["userId"] in imposter_ids:
             role = "imposter"
 
         result.append(
             {
-                "userId":
-                    player["userId"],
-
-                "displayName":
-                    player["displayName"],
-
+                "userId": player["userId"],
+                "displayName": player["displayName"],
                 "role": role
             }
         )
@@ -55,19 +45,12 @@ def assign_roles(
 def get_imposter_names(
     assigned_players
 ):
-
     names = []
 
     for player in assigned_players:
-
-        if (
-            player["role"]
-            == "imposter"
-        ):
+        if player["role"] == "imposter":
             names.append(
-                player[
-                    "displayName"
-                ]
+                player["displayName"]
             )
 
     return names
@@ -77,16 +60,9 @@ def build_role_message(
     player,
     assigned_players
 ):
-
-    if (
-        player["role"]
-        == "imposter"
-    ):
-
-        friends = (
-            get_imposter_names(
-                assigned_players
-            )
+    if player["role"] == "imposter":
+        friends = get_imposter_names(
+            assigned_players
         )
 
         return (
@@ -95,6 +71,4 @@ def build_role_message(
             + "\n".join(friends)
         )
 
-    return (
-        "【あなたはクルーです】"
-    )
+    return "【あなたはクルーです】"
