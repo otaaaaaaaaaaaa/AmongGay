@@ -16,14 +16,18 @@ def format_jst(value=None):
     """日時を日本時間の文字列に変換する。"""
     if value is None:
         value = now_jst()
+
     elif isinstance(value, str):
         value = datetime.fromisoformat(value)
+
         if value.tzinfo is None:
             value = value.replace(tzinfo=JST)
         else:
             value = value.astimezone(JST)
+
     elif value.tzinfo is None:
         value = value.replace(tzinfo=JST)
+
     else:
         value = value.astimezone(JST)
 
@@ -37,9 +41,12 @@ def parse_jst(value):
 
     if isinstance(value, datetime):
         result = value
+
     else:
         try:
-            result = datetime.fromisoformat(str(value).strip())
+            result = datetime.fromisoformat(
+                str(value).strip()
+            )
         except (TypeError, ValueError):
             return None
 
@@ -57,6 +64,7 @@ def get_state():
 
     for row in rows:
         key = row.get("key")
+
         if key:
             result[str(key)] = row.get("value")
 
@@ -95,7 +103,11 @@ def set_value(key, value):
 # Kill notification
 # --------------------
 
-def schedule_kill_notification(user_id, display_name, killer_id):
+def schedule_kill_notification(
+    user_id,
+    display_name,
+    killer_id,
+):
     """
     殺害通知を10分後に送信するための情報を保存する。
     通知予定時刻は日本時間で保存する。
@@ -105,14 +117,19 @@ def schedule_kill_notification(user_id, display_name, killer_id):
     set_value("pendingKillUserId", user_id)
     set_value("pendingKillDisplayName", display_name)
     set_value("pendingKillKillerId", killer_id)
-    set_value("pendingKillNotifyAt", format_jst(notify_at))
+    set_value(
+        "pendingKillNotifyAt",
+        format_jst(notify_at),
+    )
 
     return notify_at
 
 
 def get_pending_kill_notification():
     """通知待ちの殺害情報を取得する。"""
-    notify_at = parse_jst(get_value("pendingKillNotifyAt"))
+    notify_at = parse_jst(
+        get_value("pendingKillNotifyAt")
+    )
 
     if notify_at is None:
         return None
