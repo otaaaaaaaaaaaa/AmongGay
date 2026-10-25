@@ -306,7 +306,7 @@ def handle_message(event):
             mentionees,
         )
 
-        bot_user_id = line_bot_api‎.get_bot_info().user_id
+        bot_user_id = line_bot_api.get_bot_info().user_id
 
         bot_mentioned = any(
             (
