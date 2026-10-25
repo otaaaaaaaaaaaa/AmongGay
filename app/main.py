@@ -1,18 +1,11 @@
-
+```python
 import asyncio
 import logging
-from datetime import datetime
+import re
 
-from fastapi import (
-    FastAPI,
-    Request,
-    HTTPException,
-)
+from fastapi import FastAPI, Request, HTTPException
 
-from linebot.models import (
-    MessageEvent,
-    TextMessage,
-)
+from linebot.models import MessageEvent, TextMessage
 
 from config.line_client import (
     handler,
@@ -25,7 +18,6 @@ from config.settings import ADMIN_ID
 
 from services.user_service import (
     save_user,
-    get_display_name,
     get_all_users,
 )
 
@@ -39,6 +31,10 @@ from services.game_state_service import (
     set_value,
     set_total_tasks,
     set_completed_tasks,
+    now_jst,
+    schedule_kill_notification,
+    get_pending_kill_notification,
+    clear_pending_kill_notification,
 )
 
 from services.player_service import (
@@ -48,9 +44,9 @@ from services.player_service import (
     get_alive_players,
     get_player_by_user_id,
     get_player_by_name,
+    kill_player,
     build_alive_list,
 )
-
 
 from services.task_service import (
     assign_tasks,
@@ -78,9 +74,7 @@ from services.sabotage_service import (
     sabotage_failed,
 )
 
-from services.win_service import (
-    check_win_condition,
-)
+from services.win_service import check_win_condition
 
 
 logging.basicConfig(level=logging.INFO)
@@ -88,11 +82,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# ユーザーがタスク番号を返信するまでの一時状態。
-# タスクの正式な記録はスプレッドシート側で管理する。
+# タスク番号の返信待ちユーザー
 waiting_task_users = set()
 
-# ゲームが終了したとき、終了通知を重複送信しないための状態。
+# ゲーム終了処理の重複防止
 game_finishing = False
 
 
@@ -122,10 +115,12 @@ def send_group_message(message):
 
 
 def game_is_running():
+    """ゲームが進行中か確認する。"""
     return str(get_value("status")).lower() == "running"
 
 
 def is_alive_player(user_id):
+    """指定したユーザーが生存しているか確認する。"""
     player = get_player_by_user_id(user_id)
 
     if not player:
@@ -135,19 +130,17 @@ def is_alive_player(user_id):
 
 
 def is_imposter(user_id):
+    """指定したユーザーがインポスターか確認する。"""
     player = get_player_by_user_id(user_id)
 
     return (
         player is not None
-        and player.get("role") == "imposter"
+        and str(player.get("role", "")).lower() == "imposter"
     )
 
 
 def end_game(message):
-    """
-    ゲームを終了状態にして、グループへ結果を通知する。
-    終了後は勝利判定を繰り返さない。
-    """
+    """ゲームを終了し、結果をグループへ通知する。"""
     global game_finishing
 
     if not game_is_running() or game_finishing:
@@ -174,10 +167,7 @@ def check_and_announce_win():
 
 
 def get_player_by_number_or_name(user_id, text):
-    """
-    投票対象の名前を確認する。
-    追放済みプレイヤーには投票できない。
-    """
+    """投票対象の生存プレイヤーを名前で取得する。"""
     target_name = text.strip()
 
     if not target_name:
@@ -192,6 +182,42 @@ def get_player_by_number_or_name(user_id, text):
         return None
 
     return target
+
+
+def is_private_chat(event):
+    """個人チャットから送られたイベントか確認する。"""
+    source = event.source
+
+    return not (
+        getattr(source, "group_id", None)
+        or getattr(source, "room_id", None)
+    )
+
+
+def process_pending_kill_notification():
+    """殺害通知の予定時刻を確認し、期限到来時に通知する。"""
+    pending = get_pending_kill_notification()
+
+    if not pending:
+        return
+
+    if now_jst() < pending["notifyAt"]:
+        return
+
+    display_name = pending["displayName"]
+
+    sent = send_group_message(
+        f"🔪 インポスターが{display_name}を殺害しました。"
+    )
+
+    # 送信成功時だけ通知待ち情報を消す。
+    # グループ送信に失敗した場合は次回の監視で再試行する。
+    if sent:
+        clear_pending_kill_notification()
+        logger.info(
+            "殺害通知を送信しました: %s",
+            display_name,
+        )
 
 
 # ==================================================
@@ -226,11 +252,14 @@ async def callback(request: Request):
 
 async def timer_monitor():
     """
-    会議の5分経過とサポタージュの2時間経過を監視する。
-    アプリが稼働している間、約10秒ごとに確認する。
+    会議・サポタージュ・殺害通知を監視する。
+    約10秒ごとに確認する。
     """
     while True:
         try:
+            # 10分後の殺害通知
+            process_pending_kill_notification()
+
             if game_is_running():
 
                 # 会議の投票締切
@@ -241,10 +270,7 @@ async def timer_monitor():
                     check_and_announce_win()
 
                 # サポタージュの制限時間超過
-                if (
-                    game_is_running()
-                    and sabotage_failed()
-                ):
+                if game_is_running() and sabotage_failed():
                     resolve_sabotage()
 
                     end_game(
@@ -286,8 +312,11 @@ def is_bot_mentioned(event):
     """グループ／トークルームのメッセージがBot宛てか判定する。"""
     source = event.source
 
-    # 1対1のトークではメンション不要
-    if not (getattr(source, "group_id", None) or getattr(source, "room_id", None)):
+    # 個人チャットではメンション不要
+    if not (
+        getattr(source, "group_id", None)
+        or getattr(source, "room_id", None)
+    ):
         return True
 
     mention = getattr(event.message, "mention", None)
@@ -304,9 +333,11 @@ def is_bot_mentioned(event):
         return False
 
     for mentionee in mentionees:
-        # SDKやWebhookの形式差を考慮し、辞書形式・オブジェクト形式の両方を扱う
         if isinstance(mentionee, dict):
-            mentioned_user_id = mentionee.get("userId") or mentionee.get("user_id")
+            mentioned_user_id = (
+                mentionee.get("userId")
+                or mentionee.get("user_id")
+            )
             is_self = mentionee.get("is_self", False)
         else:
             mentioned_user_id = (
@@ -339,23 +370,24 @@ def handle_message(event):
 
     logger.info(
         "MESSAGE RECEIVED: text=%r, group_id=%r, room_id=%r",
-        text, group_id, room_id,
+        text,
+        group_id,
+        room_id,
     )
 
-    # グループ・トークルームではBotへのメンションがないメッセージを無視する
+    # グループではBotへのメンションがないメッセージを無視する
     if not is_bot_mentioned(event):
         return
 
-    # メンションの表示部分（@Bot名）をコマンドから取り除く
+    # メンション部分を取り除く
     if group_id or room_id:
-        import re
         text = re.sub(r"@\S+", "", text).strip()
 
     # ユーザー情報を保存する
     if user_id:
         save_user(user_id)
 
-    # メッセージを受け取ったグループ／トークルームを保存する
+    # グループID／ルームIDを保存する
     if group_id:
         set_value("groupId", group_id)
     elif room_id:
@@ -395,11 +427,14 @@ def handle_command(event, user_id, text):
 ・対処完了
 
 インポスター専用
+・殺害 プレイヤー名
 ・サポタージュ
 
 管理者専用
 ・開始 3
 
+殺害コマンドは個人チャットで送信してください。
+殺害通知は10分後にグループへ送信されます。
 投票は会議開始から5分で締め切られます。""",
         )
         return
@@ -474,7 +509,7 @@ def handle_command(event, user_id, text):
             reply_text(event.reply_token, str(exc))
             return
 
-        # playersシートを初期化して、役職とタスクを保存する。
+        # プレイヤー一覧を初期化
         clear_players()
 
         assigned_task_total = 0
@@ -482,7 +517,6 @@ def handle_command(event, user_id, text):
         for player in roles:
             player_tasks = assign_tasks()
 
-            # assign_tasks()が空なら、開始処理を止める。
             if not player_tasks:
                 reply_text(
                     event.reply_token,
@@ -500,7 +534,7 @@ def handle_command(event, user_id, text):
                 encode_tasks(player_tasks),
             )
 
-        # ゲーム状態を初期化する。
+        # ゲーム状態を初期化
         set_value("status", "running")
         set_value("imposterCount", imposter_count)
         set_value("meetingActive", "FALSE")
@@ -508,12 +542,15 @@ def handle_command(event, user_id, text):
         set_value("sabotageActive", "FALSE")
         set_value("sabotageText", "")
         set_value("sabotageEndTime", "")
+
         set_total_tasks(assigned_task_total)
         set_completed_tasks(0)
 
+        # 前回の通知待ち情報をクリア
+        clear_pending_kill_notification()
         waiting_task_users.clear()
 
-        # 役職とタスクを個人チャットへ送信する。
+        # 役職とタスクを個人チャットへ送信
         saved_players = get_players()
 
         for player in saved_players:
@@ -556,21 +593,123 @@ def handle_command(event, user_id, text):
     # ゲーム中のみ利用できるコマンド
     # --------------------------------------------------
 
-    if text in (
-        "生存者一覧",
-        "会議",
-        "投票開始",
-        "タスク完了",
-        "サポタージュ",
-        "対処完了",
-    ) or text.startswith("投票 "):
-
+    if (
+        text in (
+            "生存者一覧",
+            "会議",
+            "投票開始",
+            "タスク完了",
+            "サポタージュ",
+            "対処完了",
+        )
+        or text.startswith("投票 ")
+        or text.startswith("殺害 ")
+    ):
         if not game_is_running():
             reply_text(
                 event.reply_token,
                 "現在ゲームは進行していません。",
             )
             return
+
+    # --------------------------------------------------
+    # 殺害
+    # --------------------------------------------------
+
+    if text.startswith("殺害"):
+        # 殺害コマンドは個人チャットからのみ受け付ける
+        if not is_private_chat(event):
+            reply_text(
+                event.reply_token,
+                "殺害コマンドはインポスターの個人チャットで送信してください。",
+            )
+            return
+
+        if not is_imposter(user_id):
+            reply_text(
+                event.reply_token,
+                "インポスターのみ殺害コマンドを使用できます。",
+            )
+            return
+
+        if not is_alive_player(user_id):
+            reply_text(
+                event.reply_token,
+                "死亡したプレイヤーは殺害できません。",
+            )
+            return
+
+        args = text.split(maxsplit=1)
+
+        if len(args) != 2 or not args[1].strip():
+            reply_text(
+                event.reply_token,
+                "使用方法: 殺害 プレイヤー名\n"
+                "例: 殺害 山田太郎",
+            )
+            return
+
+        target_name = args[1].strip()
+        target = get_player_by_name(target_name)
+
+        if not target:
+            reply_text(
+                event.reply_token,
+                "指定されたプレイヤーが見つかりません。",
+            )
+            return
+
+        if str(target.get("alive", "")).upper() != "TRUE":
+            reply_text(
+                event.reply_token,
+                "そのプレイヤーはすでに死亡しています。",
+            )
+            return
+
+        if str(target.get("role", "")).lower() != "crew":
+            reply_text(
+                event.reply_token,
+                "殺害対象には生存中のクルーを指定してください。",
+            )
+            return
+
+        # 現行のgame_state_serviceは通知待ちを1件保存する仕様
+        if get_pending_kill_notification():
+            reply_text(
+                event.reply_token,
+                "前の殺害通知がまだ保留中です。"
+                "通知が送信されてから次の殺害を行ってください。",
+            )
+            return
+
+        # 対象を死亡状態にする
+        killed = kill_player(target_name)
+
+        if not killed:
+            reply_text(
+                event.reply_token,
+                "殺害処理に失敗しました。"
+                "対象が生存しているか確認してください。",
+            )
+            return
+
+        # 10分後のグループ通知を予約する
+        notify_at = schedule_kill_notification(
+            user_id=target["userId"],
+            display_name=target["displayName"],
+            killer_id=user_id,
+        )
+
+        reply_text(
+            event.reply_token,
+            f"🔪 {target['displayName']} を殺害しました。\n\n"
+            "対象は死亡状態になりました。\n"
+            f"グループへの通知予定時刻: {notify_at.strftime('%H:%M:%S')}（JST）",
+        )
+
+        # 死亡によって勝利条件が成立した場合は確認する
+        check_and_announce_win()
+        return
 
     # --------------------------------------------------
     # 生存者一覧
@@ -711,7 +850,6 @@ def handle_command(event, user_id, text):
             return
 
         waiting_task_users.add(user_id)
-
         completed_numbers = get_completed_task_numbers(user_id)
 
         reply_text(
@@ -720,6 +858,7 @@ def handle_command(event, user_id, text):
             + "\n完了したタスクの番号を送信してください。",
         )
         return
+
     # --------------------------------------------------
     # タスク番号の受信
     # --------------------------------------------------
@@ -752,7 +891,6 @@ def handle_command(event, user_id, text):
             )
             return
 
-        
         result = complete_task(user_id, task_number)
 
         if result is False:
@@ -911,8 +1049,10 @@ def handle_command(event, user_id, text):
 ・会議
 ・投票 名前
 ・タスク完了
+・殺害 プレイヤー名（インポスター専用）
 ・サポタージュ
 ・対処完了
 
 「ヘルプ」で説明を確認できます。""",
     )
+```
