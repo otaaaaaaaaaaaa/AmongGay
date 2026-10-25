@@ -89,7 +89,7 @@ game_finishing = False
 # ==================================================
 
 def get_group_id():
-return get_value("groupId")
+    return get_value("groupId")
 
 def send_group_message(message):
 group_id = get_group_id()
