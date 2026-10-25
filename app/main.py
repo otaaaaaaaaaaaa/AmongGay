@@ -282,60 +282,80 @@ async def shutdown_event():
 # LINEメッセージ処理
 # ==================================================
 
+def is_bot_mentioned(event):
+    """グループ／トークルームのメッセージがBot宛てか判定する。"""
+    source = event.source
+
+    # 1対1のトークではメンション不要
+    if not (getattr(source, "group_id", None) or getattr(source, "room_id", None)):
+        return True
+
+    mention = getattr(event.message, "mention", None)
+    mentionees = getattr(mention, "mentionees", []) if mention else []
+
+    if not mentionees:
+        logger.info("BOT MENTIONED: False (mentionees is empty)")
+        return False
+
+    try:
+        bot_user_id = line_bot_api.get_bot_info().user_id
+    except Exception:
+        logger.exception("BotのユーザーIDを取得できませんでした。")
+        return False
+
+    for mentionee in mentionees:
+        # SDKやWebhookの形式差を考慮し、辞書形式・オブジェクト形式の両方を扱う
+        if isinstance(mentionee, dict):
+            mentioned_user_id = mentionee.get("userId") or mentionee.get("user_id")
+            is_self = mentionee.get("is_self", False)
+        else:
+            mentioned_user_id = (
+                getattr(mentionee, "user_id", None)
+                or getattr(mentionee, "userId", None)
+            )
+            is_self = getattr(mentionee, "is_self", False)
+
+        if is_self is True or mentioned_user_id == bot_user_id:
+            logger.info("BOT MENTIONED: True")
+            return True
+
+    logger.info(
+        "BOT MENTIONED: False (bot_user_id=%s, mentionees=%r)",
+        bot_user_id,
+        mentionees,
+    )
+    return False
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     global waiting_task_users
 
-    user_id = event.source.user_id
+    user_id = getattr(event.source, "user_id", None)
     text = event.message.text.strip()
-
-    # グループ・トークルームでは、Botへのメンションがなければ無視
     source = event.source
     group_id = getattr(source, "group_id", None)
     room_id = getattr(source, "room_id", None)
 
+    logger.info(
+        "MESSAGE RECEIVED: text=%r, group_id=%r, room_id=%r",
+        text, group_id, room_id,
+    )
 
+    # グループ・トークルームではBotへのメンションがないメッセージを無視する
+    if not is_bot_mentioned(event):
+        return
+
+    # メンションの表示部分（@Bot名）をコマンドから取り除く
     if group_id or room_id:
-        mention = getattr(event.message, "mention", None)
-        mentionees = getattr(mention, "mentionees", []) if mention else []
-
-        logger.info(
-            "MENTION DEBUG: text=%r, mention=%r, mentionees=%r",
-            text,
-            mention,
-            mentionees,
-        )
-
-        bot_user_id = line_bot_api.get_bot_info().user_id
-
-        bot_mentioned = any(
-            (
-                getattr(m, "is_self", False) is True
-                or (
-                    isinstance(m, dict)
-                    and m.get("userId") == bot_user_id
-                )
-                or (
-                    not isinstance(m, dict)
-                    and getattr(m, "user_id", None) == bot_user_id
-                )
-            )
-            for m in mentionees
-        )
-
-        logger.info("BOT MENTIONED: %s", bot_mentioned)
-
-        if not bot_mentioned:
-            return
-
-        # メンションの表示部分を除去する
         import re
         text = re.sub(r"@\S+", "", text).strip()
 
     # ユーザー情報を保存する
-    save_user(user_id)
+    if user_id:
+        save_user(user_id)
 
+    # メッセージを受け取ったグループ／トークルームを保存する
     if group_id:
         set_value("groupId", group_id)
     elif room_id:
