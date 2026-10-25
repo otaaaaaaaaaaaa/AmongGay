@@ -269,4 +269,3 @@ def build_task_message(tasks, completed_numbers=None):
         lines.append(f"{number}. {task}　{status}")
 
     return "\n".join(lines)
-```
