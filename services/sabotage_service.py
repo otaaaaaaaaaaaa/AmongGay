@@ -24,14 +24,12 @@ waiting_users.remove(user_id)
 def activate_sabotage(sabotage_text):
 deadline = now_jst() + timedelta(hours=2)
 
-```
 start_sabotage(
     sabotage_text,
     deadline,
 )
 
 return deadline
-```
 
 def resolve_sabotage():
 stop_sabotage()
@@ -40,7 +38,6 @@ def sabotage_failed():
 if not is_sabotage_active():
 return False
 
-```
 deadline = get_value("sabotageEndTime")
 
 if not deadline:
@@ -52,4 +49,3 @@ if deadline is None:
     return False
 
 return now_jst() >= deadline
-```
