@@ -75,7 +75,7 @@ sabotage_failed,
 from services.win_service import check_win_condition
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(**name**)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
