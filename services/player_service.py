@@ -1,81 +1,62 @@
-from config.sheets import (
-    spreadsheet
-)
+```python
+from config.sheets import spreadsheet
 
-players_sheet = (
-    spreadsheet.worksheet(
-        "players"
-    )
-)
+
+players_sheet = spreadsheet.worksheet("players")
 
 
 def get_players():
-
-    return (
-        players_sheet
-        .get_all_records()
-    )
+    """全プレイヤーを取得する。"""
+    return players_sheet.get_all_records()
 
 
 def get_alive_players():
-
+    """生存しているプレイヤーだけを取得する。"""
     players = get_players()
-
     result = []
 
     for player in players:
-
-        if str(
-            player["alive"]
-        ).upper() == "TRUE":
-
-            result.append(
-                player
-            )
+        if str(player.get("alive", "")).upper() == "TRUE":
+            result.append(player)
 
     return result
 
 
-def get_player_by_name(
-    display_name
-):
-
+def get_player_by_name(display_name):
+    """表示名からプレイヤーを取得する。"""
     players = get_players()
 
     for player in players:
-
-        if (
-            player["displayName"]
-            == display_name
-        ):
-
+        if str(player.get("displayName", "")) == str(display_name):
             return player
 
     return None
 
 
-def get_player_by_user_id(
-    user_id
-):
-
+def get_player_by_user_id(user_id):
+    """LINEユーザーIDからプレイヤーを取得する。"""
     players = get_players()
 
     for player in players:
-
-        if (
-            player["userId"]
-            == user_id
-        ):
-
+        if str(player.get("userId", "")) == str(user_id):
             return player
 
     return None
+
+
+def is_player_alive(user_id):
+    """指定したユーザーが生存しているか確認する。"""
+    player = get_player_by_user_id(user_id)
+
+    if not player:
+        return False
+
+    return str(player.get("alive", "")).upper() == "TRUE"
 
 
 def clear_players():
-
+    """プレイヤー一覧を初期化する。"""
     players_sheet.clear()
-
     players_sheet.append_row(
         [
             "userId",
@@ -84,18 +65,13 @@ def clear_players():
             "alive",
             "tasks",
             "completedTasks",
-            "vote"
+            "vote",
         ]
     )
 
 
-def add_player(
-    user_id,
-    display_name,
-    role,
-    tasks
-):
-
+def add_player(user_id, display_name, role, tasks):
+    """プレイヤーを登録する。"""
     players_sheet.append_row(
         [
             user_id,
@@ -104,205 +80,175 @@ def add_player(
             "TRUE",
             tasks,
             "0",
-            ""
+            "",
         ]
     )
 
 
-def kill_player(
-    display_name
-):
+def kill_player(display_name):
+    """
+    表示名でプレイヤーを探し、死亡状態にする。
+    対象が見つからない場合や、すでに死亡している場合はFalseを返す。
+    """
+    values = players_sheet.get_all_values()
 
-    values = (
-        players_sheet
-        .get_all_values()
-    )
+    if not values:
+        return False
 
-    for i, row in enumerate(
-        values,
-        start=1
-    ):
+    headers = values[0]
 
-        if (
-            len(row) > 1
-            and row[1]
-            == display_name
-        ):
+    if "displayName" not in headers or "alive" not in headers:
+        raise ValueError(
+            "playersシートにdisplayName列とalive列が必要です。"
+        )
 
-            players_sheet.update_cell(
-                i,
-                4,
-                "FALSE"
-            )
+    name_column = headers.index("displayName")
+    alive_column = headers.index("alive")
 
-            return True
+    for row_number, row in enumerate(values[1:], start=2):
+        display_name_in_row = (
+            row[name_column] if len(row) > name_column else ""
+        )
+        alive_value = (
+            row[alive_column] if len(row) > alive_column else ""
+        )
+
+        if display_name_in_row != str(display_name):
+            continue
+
+        # すでに死亡しているプレイヤーは再度処理しない
+        if str(alive_value).upper() != "TRUE":
+            return False
+
+        players_sheet.update_cell(
+            row_number,
+            alive_column + 1,
+            "FALSE",
+        )
+        return True
 
     return False
 
 
-def set_vote(
-    user_id,
-    target_name
-):
+def set_vote(user_id, target_name):
+    """投票先を記録する。"""
+    values = players_sheet.get_all_values()
 
-    values = (
-        players_sheet
-        .get_all_values()
-    )
+    if not values:
+        return
 
-    for i, row in enumerate(
-        values,
-        start=1
-    ):
+    headers = values[0]
 
-        if (
-            len(row) > 0
-            and row[0]
-            == user_id
-        ):
+    if "userId" not in headers or "vote" not in headers:
+        raise ValueError(
+            "playersシートにuserId列とvote列が必要です。"
+        )
 
+    user_id_column = headers.index("userId")
+    vote_column = headers.index("vote")
+
+    for row_number, row in enumerate(values[1:], start=2):
+        player_user_id = (
+            row[user_id_column]
+            if len(row) > user_id_column
+            else ""
+        )
+
+        if player_user_id == str(user_id):
             players_sheet.update_cell(
-                i,
-                7,
-                target_name
+                row_number,
+                vote_column + 1,
+                target_name,
             )
-
             return
 
 
 def clear_votes():
+    """全プレイヤーの投票を消去する。"""
+    values = players_sheet.get_all_values()
 
-    values = (
-        players_sheet
-        .get_all_values()
-    )
+    if not values:
+        return
 
-    for i in range(
-        2,
-        len(values)+1
-    ):
+    headers = values[0]
 
+    if "vote" not in headers:
+        raise ValueError("playersシートにvote列が必要です。")
+
+    vote_column = headers.index("vote") + 1
+
+    for row_number in range(2, len(values) + 1):
         players_sheet.update_cell(
-            i,
-            7,
-            ""
+            row_number,
+            vote_column,
+            "",
         )
 
 
 def get_vote_result():
-
+    """生存プレイヤーの投票結果を集計する。"""
     players = get_alive_players()
-
     votes = {}
 
     for player in players:
-
-        target = (
-            player["vote"]
-        )
+        target = player.get("vote", "")
 
         if not target:
             continue
 
-        votes[target] = (
-            votes.get(
-                target,
-                0
-            )
-            + 1
-        )
+        votes[target] = votes.get(target, 0) + 1
 
-    if len(votes) == 0:
+    if not votes:
         return None
 
-    return max(
-        votes,
-        key=votes.get
-    )
+    return max(votes, key=votes.get)
 
 
 def get_alive_imposters():
-
-    players = (
-        get_alive_players()
-    )
-
+    """生存しているインポスターを取得する。"""
+    players = get_alive_players()
     result = []
 
     for player in players:
-
-        if (
-            player["role"]
-            == "imposter"
-        ):
-
-            result.append(
-                player
-            )
+        if str(player.get("role", "")).lower() == "imposter":
+            result.append(player)
 
     return result
 
 
 def get_alive_crews():
-
-    players = (
-        get_alive_players()
-    )
-
+    """生存しているクルーを取得する。"""
+    players = get_alive_players()
     result = []
 
     for player in players:
-
-        if (
-            player["role"]
-            == "crew"
-        ):
-
-            result.append(
-                player
-            )
+        if str(player.get("role", "")).lower() == "crew":
+            result.append(player)
 
     return result
 
 
-def get_role_text(
-    display_name
-):
-
-    player = (
-        get_player_by_name(
-            display_name
-        )
-    )
+def get_role_text(display_name):
+    """表示名から役職を取得する。"""
+    player = get_player_by_name(display_name)
 
     if not player:
-
         return None
 
-    return player["role"]
+    return player.get("role")
 
 
 def build_alive_list():
+    """生存者一覧のメッセージを作成する。"""
+    players = get_alive_players()
 
-    players = (
-        get_alive_players()
-    )
-
-    text = (
-        "🟢生存者一覧\n\n"
-    )
+    lines = ["🟢生存者一覧", ""]
 
     for player in players:
+        lines.append(str(player.get("displayName", "")))
 
-        text += (
-            player[
-                "displayName"
-            ]
-            + "\n"
-        )
+    lines.append("")
+    lines.append(f"合計 {len(players)}人")
 
-    text += (
-        f"\n合計 {len(players)}人"
-    )
-
-    return text
+    return "\n".join(lines)
+```
