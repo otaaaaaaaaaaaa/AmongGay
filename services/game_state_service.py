@@ -213,4 +213,3 @@ def set_completed_tasks(value):
 def increment_completed_tasks():
     current = get_completed_tasks()
     set_completed_tasks(current + 1)
-```
