@@ -1,22 +1,18 @@
 from linebot import (
     LineBotApi,
-    WebhookHandler
-)
-
-from linebot.models import (
-    TextSendMessage
-)
-
-from config.settings import (
-    CHANNEL_ACCESS_TOKEN,
-    CHANNEL_SECRET
+    WebhookHandler,
 )
 
 from linebot.models import (
     TextSendMessage,
     QuickReply,
     QuickReplyButton,
-    MessageAction
+    MessageAction,
+)
+
+from config.settings import (
+    CHANNEL_ACCESS_TOKEN,
+    CHANNEL_SECRET,
 )
 
 line_bot_api = LineBotApi(
@@ -29,7 +25,6 @@ handler = WebhookHandler(
 
 
 def reply_text(reply_token, text):
-
     line_bot_api.reply_message(
         reply_token,
         TextSendMessage(
@@ -39,7 +34,6 @@ def reply_text(reply_token, text):
 
 
 def push_text(user_id, text):
-
     line_bot_api.push_message(
         user_id,
         TextSendMessage(
@@ -49,17 +43,15 @@ def push_text(user_id, text):
 
 
 def get_profile(user_id):
-
     try:
         return line_bot_api.get_profile(
             user_id
         )
-
     except Exception:
         return None
 
-def reply_menu(reply_token):
 
+def reply_menu(reply_token):
     line_bot_api.reply_message(
         reply_token,
         TextSendMessage(
@@ -89,7 +81,7 @@ def reply_menu(reply_token):
                             label="サポタージュ",
                             text="サポタージュ"
                         )
-                    )
+                    ),
                 ]
             )
         )
