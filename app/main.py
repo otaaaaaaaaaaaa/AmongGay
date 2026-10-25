@@ -50,12 +50,14 @@ from services.player_service import (
     build_alive_list,
 )
 
+
 from services.task_service import (
     assign_tasks,
     encode_tasks,
     build_task_message,
     get_player_tasks,
     get_completed_count,
+    get_completed_task_numbers,
     complete_task,
 )
 
