@@ -1,7 +1,20 @@
+from datetime import (
+    datetime,
+    timedelta
+)
+
+from services.game_state_service import (
+    start_sabotage,
+    stop_sabotage,
+    is_sabotage_active,
+    get_value
+)
+
+
 waiting_users = set()
 
 
-def start_sabotage(
+def begin_sabotage_input(
     user_id
 ):
 
@@ -10,7 +23,7 @@ def start_sabotage(
     )
 
 
-def is_waiting(
+def waiting_for_text(
     user_id
 ):
 
@@ -20,23 +33,60 @@ def is_waiting(
     )
 
 
-def finish_sabotage(
+def finish_input(
     user_id
 ):
 
-    if user_id in waiting_users:
+    if (
+        user_id
+        in waiting_users
+    ):
 
         waiting_users.remove(
             user_id
         )
 
 
-def cancel_sabotage(
-    user_id
+def activate_sabotage(
+    sabotage_text
 ):
 
-    if user_id in waiting_users:
+    deadline = (
+        datetime.now()
+        + timedelta(hours=2)
+    )
 
-        waiting_users.remove(
-            user_id
+    start_sabotage(
+        sabotage_text,
+        deadline.isoformat()
+    )
+
+    return deadline
+
+
+def resolve_sabotage():
+
+    stop_sabotage()
+
+
+def sabotage_failed():
+
+    if not is_sabotage_active():
+
+        return False
+
+    deadline = get_value(
+        "sabotageEndTime"
+    )
+
+    if not deadline:
+
+        return False
+
+    return (
+        datetime.now()
+        >=
+        datetime.fromisoformat(
+            deadline
         )
+    )
