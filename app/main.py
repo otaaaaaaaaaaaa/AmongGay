@@ -306,8 +306,20 @@ def handle_message(event):
             mentionees,
         )
 
+        bot_user_id = line_bot_api.get_bot_info().user_id
+
         bot_mentioned = any(
-            getattr(m, "is_self", False) is True
+            (
+                getattr(m, "is_self", False) is True
+                or (
+                    isinstance(m, dict)
+                    and m.get("userId") == bot_user_id
+                )
+                or (
+                    not isinstance(m, dict)
+                    and getattr(m, "user_id", None) == bot_user_id
+                )
+            )
             for m in mentionees
         )
 
