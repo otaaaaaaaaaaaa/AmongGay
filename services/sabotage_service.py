@@ -1,92 +1,55 @@
-from datetime import (
-    datetime,
-    timedelta
-)
+from datetime import timedelta
 
 from services.game_state_service import (
-    start_sabotage,
-    stop_sabotage,
-    is_sabotage_active,
-    get_value
+start_sabotage,
+stop_sabotage,
+is_sabotage_active,
+get_value,
+now_jst,
+parse_jst,
 )
-
 
 waiting_users = set()
 
+def begin_sabotage_input(user_id):
+waiting_users.add(user_id)
 
-def begin_sabotage_input(
-    user_id
-):
+def waiting_for_text(user_id):
+return user_id in waiting_users
 
-    waiting_users.add(
-        user_id
-    )
+def finish_input(user_id):
+if user_id in waiting_users:
+waiting_users.remove(user_id)
 
+def activate_sabotage(sabotage_text):
+deadline = now_jst() + timedelta(hours=2)
 
-def waiting_for_text(
-    user_id
-):
+```
+start_sabotage(
+    sabotage_text,
+    deadline,
+)
 
-    return (
-        user_id
-        in waiting_users
-    )
-
-
-def finish_input(
-    user_id
-):
-
-    if (
-        user_id
-        in waiting_users
-    ):
-
-        waiting_users.remove(
-            user_id
-        )
-
-
-def activate_sabotage(
-    sabotage_text
-):
-
-    deadline = (
-        datetime.now()
-        + timedelta(hours=2)
-    )
-
-    start_sabotage(
-        sabotage_text,
-        deadline.isoformat()
-    )
-
-    return deadline
-
+return deadline
+```
 
 def resolve_sabotage():
-
-    stop_sabotage()
-
+stop_sabotage()
 
 def sabotage_failed():
+if not is_sabotage_active():
+return False
 
-    if not is_sabotage_active():
+```
+deadline = get_value("sabotageEndTime")
 
-        return False
+if not deadline:
+    return False
 
-    deadline = get_value(
-        "sabotageEndTime"
-    )
+deadline = parse_jst(deadline)
 
-    if not deadline:
+if deadline is None:
+    return False
 
-        return False
-
-    return (
-        datetime.now()
-        >=
-        datetime.fromisoformat(
-            deadline
-        )
-    )
+return now_jst() >= deadline
+```
