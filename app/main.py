@@ -653,9 +653,6 @@ def handle_command(event, user_id, text):
 
         waiting_task_users.add(user_id)
 
-        reply_text(
-            event.reply_token,
-            
         completed_numbers = get_completed_task_numbers(user_id)
 
         reply_text(
@@ -664,7 +661,6 @@ def handle_command(event, user_id, text):
             + "\n完了したタスクの番号を送信してください。",
         )
         return
-
     # --------------------------------------------------
     # タスク番号の受信
     # --------------------------------------------------
