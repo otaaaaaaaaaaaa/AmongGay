@@ -655,7 +655,12 @@ def handle_command(event, user_id, text):
 
         reply_text(
             event.reply_token,
-            build_task_message(tasks)
+            
+        completed_numbers = get_completed_task_numbers(user_id)
+
+        reply_text(
+            event.reply_token,
+            build_task_message(tasks, completed_numbers)
             + "\n完了したタスクの番号を送信してください。",
         )
         return
@@ -692,12 +697,23 @@ def handle_command(event, user_id, text):
             )
             return
 
-        result = complete_task(user_id)
+        
+        result = complete_task(user_id, task_number)
+
+        if result is False:
+            waiting_task_users.discard(user_id)
+            reply_text(
+                event.reply_token,
+                "⚠️ このタスクはすでに完了しています。\n"
+                "別の未完了タスクを選んでください。",
+            )
+            return
 
         if result is None:
             reply_text(
                 event.reply_token,
-                "タスク完了を記録できませんでした。",
+                "タスクを記録できませんでした。"
+                "タスク番号を確認してください。",
             )
             return
 
@@ -716,7 +732,7 @@ def handle_command(event, user_id, text):
         reply_text(
             event.reply_token,
             f"✅ タスク完了\n\n"
-            f"選択したタスク: {tasks[task_number - 1]}\n"
+            f"完了したタスク: {tasks[task_number - 1]}\n"
             f"あなたの残りタスク数: {remaining}個\n\n"
             f"全体進捗: {completed_total} / {total_tasks}",
         )
