@@ -13,10 +13,14 @@ def get_enabled_tasks():
     result = []
 
     for row in tasks_sheet.get_all_records():
-        enabled = str(row.get("enabled", "")).strip().upper()
+        enabled = str(
+            row.get("enabled", "")
+        ).strip().upper()
 
         if enabled in ("TRUE", "1", "YES"):
-            task_name = str(row.get("task", "")).strip()
+            task_name = str(
+                row.get("task", "")
+            ).strip()
 
             if task_name:
                 result.append(task_name)
@@ -31,7 +35,10 @@ def assign_tasks(count=3):
     if not tasks:
         return []
 
-    return random.sample(tasks, min(count, len(tasks)))
+    return random.sample(
+        tasks,
+        min(count, len(tasks)),
+    )
 
 
 def encode_tasks(tasks):
@@ -58,11 +65,16 @@ def _decode_task_records(task_text):
     try:
         data = json.loads(task_text)
 
-        if isinstance(data, dict) and isinstance(data.get("items"), list):
+        if (
+            isinstance(data, dict)
+            and isinstance(data.get("items"), list)
+        ):
             return [
                 {
                     "name": str(item.get("name", "")),
-                    "completed": bool(item.get("completed", False)),
+                    "completed": bool(
+                        item.get("completed", False)
+                    ),
                 }
                 for item in data["items"]
             ]
@@ -91,7 +103,9 @@ def _get_player_row(user_id):
     headers = values[0]
 
     if "userId" not in headers:
-        raise ValueError("playersシートにuserId列がありません。")
+        raise ValueError(
+            "playersシートにuserId列がありません。"
+        )
 
     user_id_column = headers.index("userId")
 
@@ -101,7 +115,11 @@ def _get_player_row(user_id):
             and row[user_id_column] == str(user_id)
         ):
             row_data = {
-                headers[index]: row[index] if index < len(row) else ""
+                headers[index]: (
+                    row[index]
+                    if index < len(row)
+                    else ""
+                )
                 for index in range(len(headers))
             }
 
@@ -117,9 +135,14 @@ def get_player_tasks(user_id):
     if not player:
         return []
 
-    records = _decode_task_records(player.get("tasks", ""))
+    records = _decode_task_records(
+        player.get("tasks", "")
+    )
 
-    return [item["name"] for item in records]
+    return [
+        item["name"]
+        for item in records
+    ]
 
 
 def get_completed_task_numbers(user_id):
@@ -129,7 +152,9 @@ def get_completed_task_numbers(user_id):
     if not player:
         return set()
 
-    records = _decode_task_records(player.get("tasks", ""))
+    records = _decode_task_records(
+        player.get("tasks", "")
+    )
 
     return {
         index
@@ -140,7 +165,9 @@ def get_completed_task_numbers(user_id):
 
 def get_completed_count(user_id):
     """指定プレイヤーの完了済みタスク数を取得する。"""
-    return len(get_completed_task_numbers(user_id))
+    return len(
+        get_completed_task_numbers(user_id)
+    )
 
 
 def _increment_global_completed_tasks():
@@ -148,7 +175,9 @@ def _increment_global_completed_tasks():
     values = game_state_sheet.get_all_values()
 
     if not values:
-        raise ValueError("game_stateシートが空です。")
+        raise ValueError(
+            "game_stateシートが空です。"
+        )
 
     headers = values[0]
 
@@ -167,14 +196,20 @@ def _increment_global_completed_tasks():
         ):
             current = 0
 
-            if len(row) >= value_column and row[value_column - 1]:
-                current = int(row[value_column - 1])
+            if (
+                len(row) >= value_column
+                and row[value_column - 1]
+            ):
+                current = int(
+                    row[value_column - 1]
+                )
 
             game_state_sheet.update_cell(
                 row_number,
                 value_column,
                 current + 1,
             )
+
             return
 
     # completedTasksが存在しない場合は新規作成
@@ -201,12 +236,17 @@ def complete_task(user_id, task_number):
     if not player:
         return None
 
-    if "tasks" not in headers or "completedTasks" not in headers:
+    if (
+        "tasks" not in headers
+        or "completedTasks" not in headers
+    ):
         raise ValueError(
             "playersシートにtasksとcompletedTasks列が必要です。"
         )
 
-    records = _decode_task_records(player.get("tasks", ""))
+    records = _decode_task_records(
+        player.get("tasks", "")
+    )
 
     if task_number < 1 or task_number > len(records):
         return None
@@ -223,7 +263,9 @@ def complete_task(user_id, task_number):
     completed_column = headers.index("completedTasks") + 1
 
     completed_count = sum(
-        1 for task in records if task["completed"]
+        1
+        for task in records
+        if task["completed"]
     )
 
     players_sheet.update_cell(
@@ -242,7 +284,9 @@ def complete_task(user_id, task_number):
     )
 
     # クルーのタスクだけ全体の達成数に加算する
-    role = str(player.get("role", "")).strip().lower()
+    role = str(
+        player.get("role", "")
+    ).strip().lower()
 
     if role == "crew":
         _increment_global_completed_tasks()
@@ -266,6 +310,8 @@ def build_task_message(tasks, completed_numbers=None):
             else "⬜ 未完了"
         )
 
-        lines.append(f"{number}. {task}　{status}")
+        lines.append(
+            f"{number}. {task}　{status}"
+        )
 
     return "\n".join(lines)
