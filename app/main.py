@@ -18,6 +18,7 @@ from config.line_client import (
     handler,
     reply_text,
     push_text,
+    line_bot_api,
 )
 
 from config.settings import ADMIN_ID
