@@ -21,12 +21,10 @@ def begin_meeting():
 """5分間の会議を開始する。"""
 end_time = now_jst() + timedelta(minutes=5)
 
-```
 start_meeting(end_time)
 clear_votes()
 
 return end_time
-```
 
 def register_vote(user_id, target_name):
 """プレイヤーの投票を登録する。"""
@@ -37,7 +35,6 @@ def meeting_expired():
 if not is_meeting_active():
 return False
 
-```
 end_time = get_value("meetingEndTime")
 
 if not end_time:
@@ -49,13 +46,11 @@ if deadline is None:
     return False
 
 return now_jst() >= deadline
-```
 
 def finish_meeting():
 """投票を集計し、必要に応じて追放する。"""
 result = get_vote_result()
 
-```
 # 二重集計を防ぐため、最初に会議を終了する
 stop_meeting()
 
@@ -106,4 +101,3 @@ return (
     f"{result} は\n"
     f"{role_text}でした。"
 )
-```
