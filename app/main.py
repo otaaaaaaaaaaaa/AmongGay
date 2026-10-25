@@ -260,7 +260,7 @@ process_pending_kill_notification()
 
                 end_game(
                     "💀 IMPOSTOR WIN\n\n"
-                    "サポタージュの制限時間を超過しました。\n\n"
+                    "サボタージュの制限時間を超過しました。\n\n"
                     "クルーが2時間以内に対処できなかったため、"
                     "インポスターの勝利です。"
                 )
@@ -407,7 +407,7 @@ if text in ("こんにちは", "こん", "ヘルプ", "help"):
 
 インポスター専用
 ・殺害 プレイヤー名
-・サポタージュ
+・サボタージュ
 
 管理者専用
 ・開始 3
@@ -425,11 +425,17 @@ return
 
 if text.startswith("開始"):
     if user_id != ADMIN_ID:
-        reply_text(event.reply_token, "開始できるのは運営者のみです。")
+        reply_text(
+            event.reply_token,
+            "開始できるのは運営者のみです。",
+        )
         return
 
     if game_is_running():
-        reply_text(event.reply_token, "すでにゲームが進行中です。")
+        reply_text(
+            event.reply_token,
+            "すでにゲームが進行中です。",
+        )
         return
 
     args = text.split()
@@ -455,7 +461,8 @@ if text.startswith("開始"):
     if len(users) < 3:
         reply_text(
             event.reply_token,
-            "プレイヤーが不足しています。最低3人のユーザー登録が必要です。",
+            "プレイヤーが不足しています。"
+            "最低3人のユーザー登録が必要です。",
         )
         return
 
@@ -475,9 +482,9 @@ if text.startswith("開始"):
 
     try:
         roles = assign_roles(users, imposter_count)
-        # 先にすべてのタスクを割り当て、失敗時に途中登録を避ける
         prepared_players = []
 
+        # 先にすべてのタスクを割り当て、失敗時に途中登録を避ける
         for player in roles:
             player_tasks = assign_tasks()
 
@@ -572,14 +579,17 @@ if (
         "会議",
         "投票開始",
         "タスク完了",
-        "サポタージュ",
+        "サボタージュ",
         "対処完了",
     )
     or text.startswith("投票 ")
     or text.startswith("殺害 ")
 ):
     if not game_is_running():
-        reply_text(event.reply_token, "現在ゲームは進行していません。")
+        reply_text(
+            event.reply_token,
+            "現在ゲームは進行していません。",
+        )
         return
 
 # --------------------------------------------------
@@ -614,11 +624,17 @@ if text.startswith("殺害"):
     target = get_player_by_name(target_name)
 
     if not target:
-        reply_text(event.reply_token, "指定されたプレイヤーが見つかりません。")
+        reply_text(
+            event.reply_token,
+            "指定されたプレイヤーが見つかりません。",
+        )
         return
 
     if str(target.get("alive", "")).upper() != "TRUE":
-        reply_text(event.reply_token, "そのプレイヤーはすでに死亡しています。")
+        reply_text(
+            event.reply_token,
+            "そのプレイヤーはすでに死亡しています。",
+        )
         return
 
     if str(target.get("role", "")).lower() != "crew":
@@ -639,7 +655,8 @@ if text.startswith("殺害"):
     if not kill_player(target_name):
         reply_text(
             event.reply_token,
-            "殺害処理に失敗しました。対象が生存しているか確認してください。",
+            "殺害処理に失敗しました。"
+            "対象が生存しているか確認してください。",
         )
         return
 
@@ -653,7 +670,8 @@ if text.startswith("殺害"):
         event.reply_token,
         f"🔪 {target['displayName']} を殺害しました。\n\n"
         "対象は死亡状態になりました。\n"
-        f"グループへの通知予定時刻: {notify_at.strftime('%H:%M:%S')}（JST）",
+        f"グループへの通知予定時刻: "
+        f"{notify_at.strftime('%H:%M:%S')}（JST）",
     )
 
     check_and_announce_win()
@@ -707,7 +725,10 @@ if text in ("会議", "投票開始"):
 )
 
 ```
-    reply_text(event.reply_token, "会議を開始しました。5分以内に投票してください。")
+    reply_text(
+        event.reply_token,
+        "会議を開始しました。5分以内に投票してください。",
+    )
     return
 
 # --------------------------------------------------
@@ -725,13 +746,17 @@ if text.startswith("投票 "):
         return
 
     if not is_meeting_active():
-        reply_text(event.reply_token, "現在投票できる会議はありません。")
+        reply_text(
+            event.reply_token,
+            "現在投票できる会議はありません。",
+        )
         return
 
     if meeting_expired():
         result_message = finish_meeting()
         send_group_message(result_message)
         check_and_announce_win()
+
         reply_text(
             event.reply_token,
             "投票時間が終了したため、今回の投票は締め切られました。",
@@ -750,7 +775,10 @@ if text.startswith("投票 "):
         return
 
     if target["userId"] == user_id:
-        reply_text(event.reply_token, "自分自身には投票できません。")
+        reply_text(
+            event.reply_token,
+            "自分自身には投票できません。",
+        )
         return
 
     register_vote(user_id, target["displayName"])
@@ -764,19 +792,25 @@ if text.startswith("投票 "):
 # --------------------------------------------------
 # タスク完了
 # 死亡したクルーも実行可能
+# インポスターの偽タスクも個人分は完了可能
 # --------------------------------------------------
 
 if text == "タスク完了":
     player = get_player_by_user_id(user_id)
 
     if not player:
-        reply_text(event.reply_token, "ゲームの参加者ではありません。")
-        return
-
-    if str(player.get("role", "")).lower() != "crew":
         reply_text(
             event.reply_token,
-            "インポスターは偽タスクを実行できません。",
+            "ゲームの参加者ではありません。",
+        )
+        return
+
+    role = str(player.get("role", "")).lower()
+
+    if role == "imposter" and not is_alive_player(user_id):
+        reply_text(
+            event.reply_token,
+            "死亡したインポスターはタスクを実行できません。",
         )
         return
 
@@ -784,11 +818,17 @@ if text == "タスク完了":
     completed_count = get_completed_count(user_id)
 
     if not tasks:
-        reply_text(event.reply_token, "あなたに割り当てられたタスクがありません。")
+        reply_text(
+            event.reply_token,
+            "あなたに割り当てられたタスクがありません。",
+        )
         return
 
     if completed_count >= len(tasks):
-        reply_text(event.reply_token, "あなたのタスクはすべて完了しています。")
+        reply_text(
+            event.reply_token,
+            "あなたのタスクはすべて完了しています。",
+        )
         return
 
     waiting_task_users.add(user_id)
@@ -809,15 +849,21 @@ if text == "タスク完了":
 if user_id in waiting_task_users:
     player = get_player_by_user_id(user_id)
 
-    if (
-        not player
-        or str(player.get("role", "")).lower() != "crew"
-        or not game_is_running()
-    ):
+    if not player or not game_is_running():
         waiting_task_users.discard(user_id)
         reply_text(
             event.reply_token,
             "現在タスクを実行できません。",
+        )
+        return
+
+    role = str(player.get("role", "")).lower()
+
+    if role == "imposter" and not is_alive_player(user_id):
+        waiting_task_users.discard(user_id)
+        reply_text(
+            event.reply_token,
+            "死亡したインポスターはタスクを実行できません。",
         )
         return
 
@@ -832,14 +878,20 @@ if user_id in waiting_task_users:
     task_number = int(text)
 
     if task_number < 1 or task_number > len(tasks):
-        reply_text(event.reply_token, "その番号のタスクはありません。")
+        reply_text(
+            event.reply_token,
+            "その番号のタスクはありません。",
+        )
         return
 
     completed_count = get_completed_count(user_id)
 
     if completed_count >= len(tasks):
         waiting_task_users.discard(user_id)
-        reply_text(event.reply_token, "あなたのタスクはすべて完了しています。")
+        reply_text(
+            event.reply_token,
+            "あなたのタスクはすべて完了しています。",
+        )
         return
 
     result = complete_task(user_id, task_number)
@@ -856,7 +908,8 @@ if user_id in waiting_task_users:
     if result is None:
         reply_text(
             event.reply_token,
-            "タスクを記録できませんでした。タスク番号を確認してください。",
+            "タスクを記録できませんでした。"
+            "タスク番号を確認してください。",
         )
         return
 
@@ -888,7 +941,7 @@ if user_id in waiting_task_users:
     return
 
 # --------------------------------------------------
-# サポタージュ開始
+# サボタージュ開始
 # --------------------------------------------------
 
 if text == "サポタージュ":
@@ -911,11 +964,14 @@ if text == "サポタージュ":
 
     begin_sabotage_input(user_id)
 
-    reply_text(event.reply_token, "サポタージュの内容を入力してください。")
+    reply_text(
+        event.reply_token,
+        "サポタージュの内容を入力してください。",
+    )
     return
 
 # --------------------------------------------------
-# サポタージュ内容の受信
+# サボタージュ内容の受信
 # --------------------------------------------------
 
 if waiting_for_text(user_id):
@@ -924,7 +980,7 @@ if waiting_for_text(user_id):
         reply_text(
             event.reply_token,
             "死亡したインポスター、またはゲーム終了後は"
-            "サポタージュを開始できません。",
+            "サボタージュを開始できません。",
         )
         return
 
@@ -939,14 +995,17 @@ if waiting_for_text(user_id):
         return
 
     if not text:
-        reply_text(event.reply_token, "サポタージュの内容を入力してください。")
+        reply_text(
+            event.reply_token,
+            "サボタージュの内容を入力してください。",
+        )
         return
 
     finish_input(user_id)
     deadline = activate_sabotage(text)
 
     send_group_message(
-        f"""🚨 サポタージュ発生
+        f"""🚨 サボタージュ発生
 ```
 
 {text}
@@ -959,21 +1018,24 @@ if waiting_for_text(user_id):
 )
 
 ```
-    reply_text(event.reply_token, "サポタージュをグループへ通知しました。")
+    reply_text(
+        event.reply_token,
+        "サボタージュをグループへ通知しました。",
+    )
     return
 
 # --------------------------------------------------
-# サポタージュ解決
+# サボタージュ解決
 # --------------------------------------------------
 
 if text == "対処完了":
-    from services.game_state_service import (
-        is_sabotage_active,
-        get_value,
-    )
+    from services.game_state_service import is_sabotage_active
 
     if not is_sabotage_active():
-        reply_text(event.reply_token, "現在、解決するサポタージュはありません。")
+        reply_text(
+            event.reply_token,
+            "現在、解決するサボタージュはありません。",
+        )
         return
 
     player = get_player_by_user_id(user_id)
@@ -981,7 +1043,7 @@ if text == "対処完了":
     if not player or str(player.get("role", "")).lower() != "crew":
         reply_text(
             event.reply_token,
-            "サポタージュを解決できるのはクルーのみです。",
+            "サボタージュを解決できるのはクルーのみです。",
         )
         return
 
@@ -989,16 +1051,19 @@ if text == "対処完了":
     resolve_sabotage()
 
     send_group_message(
-        f"""✅ サポタージュ解決
+        f"""✅ サボタージュ解決
 ```
 
 {sabotage_text}
 
-クルーがサポタージュに対処しました。"""
+クルーがサボタージュに対処しました。"""
 )
 
 ```
-    reply_text(event.reply_token, "サポタージュを解決済みにしました。")
+    reply_text(
+        event.reply_token,
+        "サボタージュを解決済みにしました。",
+    )
     return
 
 # --------------------------------------------------
