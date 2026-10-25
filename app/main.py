@@ -294,20 +294,29 @@ def handle_message(event):
     group_id = getattr(source, "group_id", None)
     room_id = getattr(source, "room_id", None)
 
+
     if group_id or room_id:
         mention = getattr(event.message, "mention", None)
         mentionees = getattr(mention, "mentionees", []) if mention else []
 
-        # Bot自身へのメンションだけを許可する
+        logger.info(
+            "MENTION DEBUG: text=%r, mention=%r, mentionees=%r",
+            text,
+            mention,
+            mentionees,
+        )
+
         bot_mentioned = any(
-            getattr(m, "is_self", False)
+            getattr(m, "is_self", False) is True
             for m in mentionees
         )
+
+        logger.info("BOT MENTIONED: %s", bot_mentioned)
 
         if not bot_mentioned:
             return
 
-        # メンション情報を取り除いてコマンドとして処理
+        # メンションの表示部分を除去する
         import re
         text = re.sub(r"@\S+", "", text).strip()
 
