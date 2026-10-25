@@ -281,6 +281,7 @@ async def shutdown_event():
 # LINEメッセージ処理
 # ==================================================
 
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     global waiting_task_users
@@ -288,14 +289,30 @@ def handle_message(event):
     user_id = event.source.user_id
     text = event.message.text.strip()
 
-    # ユーザー情報を保存する。
-    save_user(user_id)
-
-    # グループまたはトークルームからのイベントならIDを保存。
+    # グループ・トークルームでは、Botへのメンションがなければ無視
     source = event.source
-
     group_id = getattr(source, "group_id", None)
     room_id = getattr(source, "room_id", None)
+
+    if group_id or room_id:
+        mention = getattr(event.message, "mention", None)
+        mentionees = getattr(mention, "mentionees", []) if mention else []
+
+        # Bot自身へのメンションだけを許可する
+        bot_mentioned = any(
+            getattr(m, "is_self", False)
+            for m in mentionees
+        )
+
+        if not bot_mentioned:
+            return
+
+        # メンション情報を取り除いてコマンドとして処理
+        import re
+        text = re.sub(r"@\S+", "", text).strip()
+
+    # ユーザー情報を保存する
+    save_user(user_id)
 
     if group_id:
         set_value("groupId", group_id)
