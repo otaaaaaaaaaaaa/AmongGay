@@ -11,48 +11,40 @@ def get_alive_players():
 players = get_players()
 result = []
 
-```
 for player in players:
     if str(player.get("alive", "")).upper() == "TRUE":
         result.append(player)
 
 return result
-```
 
 def get_player_by_name(display_name):
 """表示名からプレイヤーを取得する。"""
 players = get_players()
 
-```
 for player in players:
     if str(player.get("displayName", "")) == str(display_name):
         return player
 
 return None
-```
 
 def get_player_by_user_id(user_id):
 """LINEユーザーIDからプレイヤーを取得する。"""
 players = get_players()
 
-```
 for player in players:
     if str(player.get("userId", "")) == str(user_id):
         return player
 
 return None
-```
 
 def is_player_alive(user_id):
 """指定したユーザーが生存しているか確認する。"""
 player = get_player_by_user_id(user_id)
 
-```
 if not player:
     return False
 
 return str(player.get("alive", "")).upper() == "TRUE"
-```
 
 def clear_players():
 """プレイヤー一覧を初期化する。"""
@@ -90,7 +82,6 @@ def kill_player(display_name):
 """
 values = players_sheet.get_all_values()
 
-```
 if not values:
     return False
 
@@ -126,13 +117,11 @@ for row_number, row in enumerate(values[1:], start=2):
     return True
 
 return False
-```
 
 def set_vote(user_id, target_name):
 """投票先を記録する。"""
 values = players_sheet.get_all_values()
 
-```
 if not values:
     return
 
@@ -160,13 +149,11 @@ for row_number, row in enumerate(values[1:], start=2):
             target_name,
         )
         return
-```
 
 def clear_votes():
 """全プレイヤーの投票を消去する。"""
 values = players_sheet.get_all_values()
 
-```
 if not values:
     return
 
@@ -183,13 +170,11 @@ for row_number in range(2, len(values) + 1):
         vote_column,
         "",
     )
-```
 
 def get_vote_result():
 """
 生存プレイヤーの投票結果を集計する。
 
-```
 戻り値:
 - None: 有効な投票がない
 - "__SKIP__": 最高得票が同数
@@ -220,50 +205,42 @@ if len(winners) != 1:
     return "__SKIP__"
 
 return winners[0]
-```
 
 def get_alive_imposters():
 """生存しているインポスターを取得する。"""
 players = get_alive_players()
 result = []
 
-```
 for player in players:
     if str(player.get("role", "")).lower() == "imposter":
         result.append(player)
 
 return result
-```
 
 def get_alive_crews():
 """生存しているクルーを取得する。"""
 players = get_alive_players()
 result = []
 
-```
 for player in players:
     if str(player.get("role", "")).lower() == "crew":
         result.append(player)
 
 return result
-```
 
 def get_role_text(display_name):
 """表示名から役職を取得する。"""
 player = get_player_by_name(display_name)
 
-```
 if not player:
     return None
 
 return player.get("role")
-```
 
 def build_alive_list():
 """生存者一覧のメッセージを作成する。"""
 players = get_alive_players()
 
-```
 lines = ["🟢生存者一覧", ""]
 
 for player in players:
@@ -273,4 +250,3 @@ lines.append("")
 lines.append(f"合計 {len(players)}人")
 
 return "\n".join(lines)
-```
