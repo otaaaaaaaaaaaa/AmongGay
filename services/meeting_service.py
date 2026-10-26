@@ -29,7 +29,7 @@ def begin_meeting():
 
 
 def register_vote(user_id, target_name):
-    """プレイヤーの投票を登録する。"""
+    """ゲイの投票を登録する。"""
     set_vote(user_id, target_name)
 
 
@@ -95,9 +95,9 @@ def finish_meeting():
         )
 
     if str(role).lower() == "imposter":
-        role_text = "インポスター"
+        role_text = "チンポスター"
     else:
-        role_text = "クルー"
+        role_text = "アナルー"
 
     return (
         "🗳️ 投票結果\n\n"
