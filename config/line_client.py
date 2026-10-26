@@ -78,8 +78,8 @@ def reply_menu(reply_token):
                     ),
                     QuickReplyButton(
                         action=MessageAction(
-                            label="サポタージュ",
-                            text="サポタージュ"
+                            label="サボタージュ",
+                            text="サボタージュ"
                         )
                     ),
                 ]
