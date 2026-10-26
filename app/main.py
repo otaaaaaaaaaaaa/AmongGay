@@ -395,10 +395,56 @@ def handle_command(event, user_id, text):
 
 管理者専用
 ・開始 3
+・終了
 
 殺害コマンドは個人チャットで送信してください。
 殺害通知は10分後にグループへ送信されます。
 投票は会議開始から5分で締め切られます。""",
+        )
+        return
+
+    # --------------------------------------------------
+    # ゲーム強制終了（管理者専用）
+    # --------------------------------------------------
+
+    if text == "終了":
+        if user_id != ADMIN_ID:
+            reply_text(
+                event.reply_token,
+                "ゲームを終了できるのは運営者のみです。",
+            )
+            return
+
+        if not game_is_running():
+            reply_text(
+                event.reply_token,
+                "現在ゲームは進行していません。",
+            )
+            return
+
+        end_game(
+            "🛑 ゲーム強制終了\n\n"
+            "運営者によってゲームが終了されました。"
+        )
+
+        # タスク入力待ちを解除
+        waiting_task_users.clear()
+
+        # 保留中の殺害通知を解除
+        clear_pending_kill_notification()
+
+        # 会議状態をリセット
+        set_value("meetingActive", "FALSE")
+        set_value("meetingEndTime", "")
+
+        # サボタージュ状態をリセット
+        set_value("sabotageActive", "FALSE")
+        set_value("sabotageText", "")
+        set_value("sabotageEndTime", "")
+
+        reply_text(
+            event.reply_token,
+            "ゲームを強制終了しました。",
         )
         return
 
@@ -1060,6 +1106,7 @@ def handle_command(event, user_id, text):
 ・殺害 プレイヤー名（インポスター専用）
 ・サポタージュ
 ・対処完了
+・終了（管理者専用）
 
 「ヘルプ」で説明を確認できます。""",
     )
