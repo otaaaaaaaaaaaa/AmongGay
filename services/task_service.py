@@ -129,7 +129,7 @@ def _get_player_row(user_id):
 
 
 def get_player_tasks(user_id):
-    """指定プレイヤーのタスク名一覧を取得する。"""
+    """指定ゲイのタスク名一覧を取得する。"""
     _, _, player = _get_player_row(user_id)
 
     if not player:
@@ -146,7 +146,7 @@ def get_player_tasks(user_id):
 
 
 def get_completed_task_numbers(user_id):
-    """指定プレイヤーの完了済みタスク番号を取得する。"""
+    """指定ゲイの完了済みタスク番号を取得する。"""
     _, _, player = _get_player_row(user_id)
 
     if not player:
@@ -164,7 +164,7 @@ def get_completed_task_numbers(user_id):
 
 
 def get_completed_count(user_id):
-    """指定プレイヤーの完了済みタスク数を取得する。"""
+    """指定ゲイの完了済みタスク数を取得する。"""
     return len(
         get_completed_task_numbers(user_id)
     )
@@ -224,10 +224,10 @@ def complete_task(user_id, task_number):
     タスクを完了済みにする。
 
     クルーのタスク完了時だけ全体の達成数を増やす。
-    インポスターの偽タスクは個人の完了数だけ更新する。
+    チンポスターの偽タスクは個人の完了数だけ更新する。
 
     戻り値:
-        None  : プレイヤーがいない、または番号が不正
+        None  : ゲイがいない、または番号が不正
         False : すでに完了済み
         int   : 完了後の個人タスク数
     """
@@ -256,7 +256,7 @@ def complete_task(user_id, task_number):
     if item["completed"]:
         return False
 
-    # 個人のタスクは、クルー・インポスターのどちらも完了扱いにする
+    # 個人のタスクは、アナルー・チンポスターのどちらも完了扱いにする
     item["completed"] = True
 
     tasks_column = headers.index("tasks") + 1
@@ -283,7 +283,7 @@ def complete_task(user_id, task_number):
         completed_count,
     )
 
-    # クルーのタスクだけ全体の達成数に加算する
+    # アナルーのタスクだけ全体の達成数に加算する
     role = str(
         player.get("role", "")
     ).strip().lower()
