@@ -5,12 +5,12 @@ players_sheet = spreadsheet.worksheet("players")
 
 
 def get_players():
-    """全プレイヤーを取得する。"""
+    """全ゲイを取得する。"""
     return players_sheet.get_all_records()
 
 
 def get_alive_players():
-    """生存しているプレイヤーだけを取得する。"""
+    """生存しているゲイだけを取得する。"""
     players = get_players()
     result = []
 
@@ -22,7 +22,7 @@ def get_alive_players():
 
 
 def get_player_by_name(display_name):
-    """表示名からプレイヤーを取得する。"""
+    """表示名からゲイを取得する。"""
     players = get_players()
 
     for player in players:
@@ -33,7 +33,7 @@ def get_player_by_name(display_name):
 
 
 def get_player_by_user_id(user_id):
-    """LINEユーザーIDからプレイヤーを取得する。"""
+    """LINEユーザーIDからゲイを取得する。"""
     players = get_players()
 
     for player in players:
@@ -54,7 +54,7 @@ def is_player_alive(user_id):
 
 
 def clear_players():
-    """プレイヤー一覧を初期化する。"""
+    """ゲイ一覧を初期化する。"""
     players_sheet.clear()
 
     players_sheet.append_row(
@@ -71,7 +71,7 @@ def clear_players():
 
 
 def add_player(user_id, display_name, role, tasks):
-    """プレイヤーを登録する。"""
+    """ゲイを登録する。"""
     players_sheet.append_row(
         [
             user_id,
@@ -87,7 +87,7 @@ def add_player(user_id, display_name, role, tasks):
 
 def kill_player(display_name):
     """
-    表示名でプレイヤーを探し、死亡状態にする。
+    表示名でゲイを探し、死亡状態にする。
     対象が見つからない場合や、すでに死亡している場合はFalseを返す。
     """
     values = players_sheet.get_all_values()
@@ -170,7 +170,7 @@ def set_vote(user_id, target_name):
 
 
 def clear_votes():
-    """全プレイヤーの投票を消去する。"""
+    """全ゲイの投票を消去する。"""
     values = players_sheet.get_all_values()
 
     if not values:
@@ -195,7 +195,7 @@ def clear_votes():
 
 def get_vote_result():
     """
-    生存プレイヤーの投票結果を集計する。
+    生存ゲイの投票結果を集計する。
 
     戻り値:
     - None: 有効な投票がない
@@ -231,7 +231,7 @@ def get_vote_result():
 
 
 def get_alive_imposters():
-    """生存しているインポスターを取得する。"""
+    """生存しているチンポスターを取得する。"""
     players = get_alive_players()
     result = []
 
@@ -243,7 +243,7 @@ def get_alive_imposters():
 
 
 def get_alive_crews():
-    """生存しているクルーを取得する。"""
+    """生存しているアナルーを取得する。"""
     players = get_alive_players()
     result = []
 
