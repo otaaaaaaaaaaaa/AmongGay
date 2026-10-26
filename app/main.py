@@ -972,7 +972,7 @@ def handle_command(event, user_id, text):
     # サボタージュ開始
     # --------------------------------------------------
 
-    if text == "サポタージュ":
+    if text == "サボタージュ":
         if not is_alive_imposter(user_id):
             reply_text(
                 event.reply_token,
@@ -985,8 +985,8 @@ def handle_command(event, user_id, text):
         if is_sabotage_active():
             reply_text(
                 event.reply_token,
-                "すでにサポタージュが発生しています。"
-                "先に解決されるまで新しいサポタージュは開始できません。",
+                "すでにサボタージュが発生しています。"
+                "先に解決されるまで新しいサボタージュは開始できません。",
             )
             return
 
@@ -1018,7 +1018,7 @@ def handle_command(event, user_id, text):
             finish_input(user_id)
             reply_text(
                 event.reply_token,
-                "すでにサポタージュが発生しています。",
+                "すでにサボタージュが発生しています。",
             )
             return
 
