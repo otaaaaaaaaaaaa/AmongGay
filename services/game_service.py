@@ -10,7 +10,7 @@ def assign_roles(
 
     if imposter_count >= len(participants):
         raise ValueError(
-            "インポスター人数が多すぎます"
+            "チンポスター人数が多すぎます"
         )
 
     imposters = random.sample(
@@ -66,9 +66,9 @@ def build_role_message(
         )
 
         return (
-            "【あなたはインポスターです】\n\n"
+            "【あなたはチンポスターです】\n\n"
             + "仲間:\n"
             + "\n".join(friends)
         )
 
-    return "【あなたはクルーです】"
+    return "【あなたはアナルーです】"
