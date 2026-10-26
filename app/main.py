@@ -251,7 +251,7 @@ async def timer_monitor():
                     end_game(
                         "💀 IMPOSTOR WIN\n\n"
                         "サボタージュの制限時間を超過しました。\n\n"
-                        "クルーが2時間以内に対処できなかったため、"
+                        "アナルーが2時間以内に対処できなかったため、"
                         "チンポスターの勝利です。"
                     )
 
@@ -390,7 +390,7 @@ def handle_command(event, user_id, text):
 ・対処完了
 
 チンポスター専用
-・殺害 プレイヤー名
+・殺害 ゲイ名
 ・サボタージュ
 
 管理者専用
@@ -472,7 +472,7 @@ def handle_command(event, user_id, text):
         if len(args) != 2:
             reply_text(
                 event.reply_token,
-                "使用方法: 開始 3\n数字はインポスターの人数です。",
+                "使用方法: 開始 3\n数字はチンポスターの人数です。",
             )
             return
 
@@ -670,7 +670,7 @@ def handle_command(event, user_id, text):
         if str(target.get("role", "")).lower() != "crew":
             reply_text(
                 event.reply_token,
-                "殺害対象には生存中のクルーを指定してください。",
+                "殺害対象には生存中のアナルーを指定してください。",
             )
             return
 
@@ -1040,7 +1040,7 @@ def handle_command(event, user_id, text):
 制限時間: 2時間
 期限: {deadline.strftime("%Y-%m-%d %H:%M:%S")}（JST）
 
-クルーは2時間以内に対処してください。
+アナルーは2時間以内に対処してください。
 解決したら「対処完了」と送信してください。"""
         )
 
@@ -1103,7 +1103,7 @@ def handle_command(event, user_id, text):
 ・会議
 ・投票 名前
 ・タスク完了
-・殺害 プレイヤー名（チンポスター専用）
+・殺害 ゲイ名（チンポスター専用）
 ・サボタージュ
 ・対処完了
 ・終了（管理者専用）
