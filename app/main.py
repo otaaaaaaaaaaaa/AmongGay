@@ -196,7 +196,7 @@ def process_pending_kill_notification():
     display_name = pending["displayName"]
 
     sent = send_group_message(
-        f"🔪 インポスターが{display_name}を殺害しました。"
+        f"🔪 チンポスターが{display_name}を殺害しました。"
     )
 
     if sent:
@@ -252,7 +252,7 @@ async def timer_monitor():
                         "💀 IMPOSTOR WIN\n\n"
                         "サボタージュの制限時間を超過しました。\n\n"
                         "クルーが2時間以内に対処できなかったため、"
-                        "インポスターの勝利です。"
+                        "チンポスターの勝利です。"
                     )
 
         except Exception:
@@ -389,7 +389,7 @@ def handle_command(event, user_id, text):
 ・タスク完了
 ・対処完了
 
-インポスター専用
+チンポスター専用
 ・殺害 プレイヤー名
 ・サボタージュ
 
@@ -481,7 +481,7 @@ def handle_command(event, user_id, text):
         except ValueError:
             reply_text(
                 event.reply_token,
-                "インポスター人数は整数で指定してください。",
+                "チンポスター人数は整数で指定してください。",
             )
             return
 
@@ -490,7 +490,7 @@ def handle_command(event, user_id, text):
         if len(users) < 3:
             reply_text(
                 event.reply_token,
-                "プレイヤーが不足しています。"
+                "ゲイが不足しています。"
                 "最低3人のユーザー登録が必要です。",
             )
             return
@@ -498,7 +498,7 @@ def handle_command(event, user_id, text):
         if imposter_count < 1 or imposter_count >= len(users):
             reply_text(
                 event.reply_token,
-                "インポスター人数を確認してください。",
+                "チンポスター人数を確認してください。",
             )
             return
 
@@ -539,14 +539,14 @@ def handle_command(event, user_id, text):
 
         clear_players()
 
-        # クルーのタスクだけを全体の総タスク数に加算する
+        # アナルーのタスクだけを全体の総タスク数に加算する
         assigned_task_total = 0
 
         for player in prepared_players:
             if str(player["role"]).lower() == "crew":
                 assigned_task_total += len(player["tasks"])
 
-            # インポスターにも個人用のフェイクタスクを割り当てる
+            # チンポスターにも個人用のフェイクタスクを割り当てる
             add_player(
                 player["userId"],
                 player["displayName"],
@@ -582,7 +582,7 @@ def handle_command(event, user_id, text):
                 )
             except Exception:
                 logger.exception(
-                    "プレイヤーへのDM送信に失敗しました: %s",
+                    "ゲイへのDM送信に失敗しました: %s",
                     player.get("displayName"),
                 )
 
@@ -590,7 +590,7 @@ def handle_command(event, user_id, text):
             f"""🎮 ゲーム開始！
 
 参加人数: {len(saved_players)}人
-インポスター: {imposter_count}人
+チンポスター: {imposter_count}人
 
 役職とタスクを個人チャットへ送信しました。
 「生存者一覧」で現在の生存者を確認できます。"""
@@ -630,14 +630,14 @@ def handle_command(event, user_id, text):
         if not is_private_chat(event):
             reply_text(
                 event.reply_token,
-                "殺害コマンドはインポスターの個人チャットで送信してください。",
+                "殺害コマンドはチンポスターの個人チャットで送信してください。",
             )
             return
 
         if not is_alive_imposter(user_id):
             reply_text(
                 event.reply_token,
-                "生存しているインポスターのみ殺害できます。",
+                "生存しているチンポスターのみ殺害できます。",
             )
             return
 
@@ -646,7 +646,7 @@ def handle_command(event, user_id, text):
         if len(args) != 2 or not args[1].strip():
             reply_text(
                 event.reply_token,
-                "使用方法: 殺害 プレイヤー名\n例: 殺害 山田太郎",
+                "使用方法: 殺害 ゲイ名\n例: 殺害 山田太郎",
             )
             return
 
@@ -656,14 +656,14 @@ def handle_command(event, user_id, text):
         if not target:
             reply_text(
                 event.reply_token,
-                "指定されたプレイヤーが見つかりません。",
+                "指定されたゲイが見つかりません。",
             )
             return
 
         if str(target.get("alive", "")).upper() != "TRUE":
             reply_text(
                 event.reply_token,
-                "そのプレイヤーはすでに死亡しています。",
+                "そのゲイはすでに死亡しています。",
             )
             return
 
@@ -723,7 +723,7 @@ def handle_command(event, user_id, text):
         if not is_alive_player(user_id):
             reply_text(
                 event.reply_token,
-                "生存しているプレイヤーのみ会議を開始できます。",
+                "生存しているゲイのみ会議を開始できます。",
             )
             return
 
@@ -769,7 +769,7 @@ def handle_command(event, user_id, text):
         if not is_alive_player(user_id):
             reply_text(
                 event.reply_token,
-                "生存しているプレイヤーのみ投票できます。",
+                "生存しているゲイのみ投票できます。",
             )
             return
 
@@ -819,8 +819,8 @@ def handle_command(event, user_id, text):
 
     # --------------------------------------------------
     # タスク完了
-    # 死亡したクルーも実行可能
-    # インポスターの偽タスクも個人分は完了可能
+    # 死亡したゲイも実行可能
+    # チンポスターの偽タスクも個人分は完了可能
     # --------------------------------------------------
 
     if text == "タスク完了":
@@ -838,7 +838,7 @@ def handle_command(event, user_id, text):
         if role == "imposter" and not is_alive_player(user_id):
             reply_text(
                 event.reply_token,
-                "死亡したインポスターはタスクを実行できません。",
+                "死亡したチンポスターはタスクを実行できません。",
             )
             return
 
@@ -871,7 +871,7 @@ def handle_command(event, user_id, text):
 
     # --------------------------------------------------
     # タスク番号の受信
-    # 死亡したクルーも実行可能
+    # 死亡したアナルーも実行可能
     # --------------------------------------------------
 
     if user_id in waiting_task_users:
@@ -891,7 +891,7 @@ def handle_command(event, user_id, text):
             waiting_task_users.discard(user_id)
             reply_text(
                 event.reply_token,
-                "死亡したインポスターはタスクを実行できません。",
+                "死亡したチンポスターはタスクを実行できません。",
             )
             return
 
@@ -976,7 +976,7 @@ def handle_command(event, user_id, text):
         if not is_alive_imposter(user_id):
             reply_text(
                 event.reply_token,
-                "生存しているインポスターのみ使用できます。",
+                "生存しているチンポスターのみ使用できます。",
             )
             return
 
@@ -1007,7 +1007,7 @@ def handle_command(event, user_id, text):
             finish_input(user_id)
             reply_text(
                 event.reply_token,
-                "死亡したインポスター、またはゲーム終了後は"
+                "死亡したチンポスター、またはゲーム終了後は"
                 "サボタージュを開始できません。",
             )
             return
@@ -1069,7 +1069,7 @@ def handle_command(event, user_id, text):
         if not player or str(player.get("role", "")).lower() != "crew":
             reply_text(
                 event.reply_token,
-                "サボタージュを解決できるのはクルーのみです。",
+                "サボタージュを解決できるのはアナルーのみです。",
             )
             return
 
@@ -1081,7 +1081,7 @@ def handle_command(event, user_id, text):
 
 {sabotage_text}
 
-クルーがサボタージュに対処しました。"""
+アナルーがサボタージュに対処しました。"""
         )
 
         reply_text(
@@ -1099,11 +1099,11 @@ def handle_command(event, user_id, text):
         """不明なコマンドです。
 
 使えるコマンド:
-・生存者一覧
+#・生存者一覧
 ・会議
 ・投票 名前
 ・タスク完了
-・殺害 プレイヤー名（インポスター専用）
+・殺害 プレイヤー名（チンポスター専用）
 ・サボタージュ
 ・対処完了
 ・終了（管理者専用）
