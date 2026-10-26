@@ -38,7 +38,7 @@ def check_win_condition():
         return (
             True,
             "🏆 CREWMATE WIN\n\n"
-            "全てのインポスターが追放されました",
+            "全てのチンポスターが追放されました",
         )
 
     if crew_win_by_task():
@@ -52,7 +52,7 @@ def check_win_condition():
         return (
             True,
             "💀 IMPOSTOR WIN\n\n"
-            "インポスターがクルーと同数になりました",
+            "チンポスターがアナルーと同数になりました",
         )
 
     return (
